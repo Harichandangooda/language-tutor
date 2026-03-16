@@ -69,6 +69,7 @@ class AppDataService:
                 "progression": progression,
             },
         )
+        self.lesson_service.preload_lessons(user_id)
 
         return {
             "user_id": user_id,
@@ -83,6 +84,7 @@ class AppDataService:
         lesson_feed = self.lesson_service.list_lessons(user_id)["lessons"]
         learner_state = self.learner_state_repo.get_or_create(user_id)
         progression = learner_state.get("progression", build_progression_state(1))
+        active_lesson_count = int(progression.get("active_lesson_count", 3))
 
         lessons = []
         strengths: list[str] = []
@@ -96,6 +98,9 @@ class AppDataService:
                 score = round(float(metrics.get("assessment_score", 0.0)) * 100, 1)
                 focus = evaluation.get("next_focus", "Continue with the next demo lesson")
                 summary = self._attempt_summary(lesson["title"], score, evaluation)
+                long_feedback = evaluation.get("long_feedback", summary)
+                what_went_well = evaluation.get("what_went_well", evaluation.get("strengths", []))
+                what_to_improve = evaluation.get("what_to_improve", evaluation.get("weaknesses", []))
                 strengths.extend(evaluation.get("strengths", []))
                 weak_topics.extend(evaluation.get("weaknesses", []))
             else:
@@ -103,8 +108,11 @@ class AppDataService:
                 current_level = int(progression.get("current_level", 1))
                 focus = LEVEL_DEFINITIONS[current_level].grammar_focus
                 summary = (
-                    f"{lesson['title']} is still pending. Finish all 3 lessons in chapter 5 to get your real chapter average."
+                    f"{lesson['title']} is still pending. Finish all {active_lesson_count} lessons in this live chapter set to lock your level score."
                 )
+                long_feedback = summary
+                what_went_well = []
+                what_to_improve = []
 
             lessons.append(
                 {
@@ -115,18 +123,24 @@ class AppDataService:
                     "score": score,
                     "focus": focus,
                     "summary": summary,
+                    "long_feedback": long_feedback,
+                    "what_went_well": what_went_well,
+                    "what_to_improve": what_to_improve,
                 }
             )
 
-        chapter_history = progression.get("chapter_history", [])
+        chapter_history = progression.get("last_completed_chapter_history") or progression.get("chapter_history", [])
         overall_score = round(
             sum(float(item.get("score", 0.0)) for item in chapter_history) / len(chapter_history),
             1,
         ) if chapter_history else 0.0
+        overall_threshold = float(progression.get("overall_threshold", 80.0))
 
         return {
             "user_id": user["user_id"],
             "overall_score": overall_score,
+            "overall_threshold": overall_threshold,
+            "meets_overall_threshold": overall_score >= overall_threshold,
             "strengths": self._unique_or_default(strengths, ["reading comprehension", "lesson consistency"]),
             "weak_topics": self._unique_or_default(
                 weak_topics,
@@ -147,7 +161,12 @@ class AppDataService:
 
         lessons_completed = learner_state.get("lesson_history", {}).get("lessons_completed", 0)
         current_level = int(progression.get("current_level", 1))
-        next_focus = learner_state.get("next_lesson_focus", {}).get("topic") or LEVEL_DEFINITIONS[current_level].focus
+        reset_focus_profile = progression.get("reset_focus_profile", {}) or {}
+        next_focus = (
+            reset_focus_profile.get("focus_override")
+            or learner_state.get("next_lesson_focus", {}).get("topic")
+            or LEVEL_DEFINITIONS[current_level].focus
+        )
 
         return {
             "user_id": user["user_id"],
@@ -162,9 +181,19 @@ class AppDataService:
             "total_lessons": len(lesson_feed),
             "streak_label": "3-day demo streak",
             "current_chapter": progression.get("current_chapter", 5),
-            "promotion_threshold": float(progression.get("promotion_threshold", 60.0)),
+            "chapter_promotion_threshold": float(
+                progression.get(
+                    "chapter_promotion_threshold",
+                    progression.get("promotion_threshold", 60.0),
+                )
+            ),
+            "overall_threshold": float(progression.get("overall_threshold", 80.0)),
             "mastered": progression.get("last_result") == "mastered",
             "next_focus": next_focus,
+            "long_feedback": "",
+            "what_went_well": [],
+            "what_to_improve": list(reset_focus_profile.get("weak_topics", [])),
+            "correct_answers": {},
         }
 
     def get_flashcards(self, user_id: str) -> dict[str, Any]:

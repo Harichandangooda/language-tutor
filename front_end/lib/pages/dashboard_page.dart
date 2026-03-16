@@ -104,13 +104,13 @@ class _LessonsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = AppScope.of(context);
     final lessons = controller.lessons;
-    final today = lessons.isNotEmpty
-        ? lessons.firstWhere(
-            (item) => item.isToday,
-            orElse: () => lessons.first,
-          )
-        : null;
-    final previousLessons = lessons.where((item) => item.lessonId != today?.lessonId).toList();
+    final active = _pickActiveLesson(lessons, controller.activeLessonId);
+    final upcoming = lessons
+        .where((item) => item.status != 'completed' && item.lessonId != active?.lessonId)
+        .toList();
+    final completed = lessons
+        .where((item) => item.status == 'completed' && item.lessonId != active?.lessonId)
+        .toList();
 
     return RefreshIndicator(
       onRefresh: controller.refreshAppData,
@@ -118,7 +118,7 @@ class _LessonsTab extends StatelessWidget {
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -141,8 +141,8 @@ class _LessonsTab extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               controller.profile == null
-                                  ? 'Build fluency with three guided German lessons.'
-                                  : 'Chapter ${controller.profile!.currentChapter}: finish the capstone and try to unlock the next level.',
+                                  ? 'Build fluency with guided German lessons.'
+                                  : 'Chapter ${controller.profile!.currentChapter}: work through the live lesson set in order.',
                               style: const TextStyle(
                                 fontSize: 28,
                                 height: 1.15,
@@ -165,55 +165,103 @@ class _LessonsTab extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
-                  if (today != null) _TodayCard(lesson: today),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Previous lessons',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF112032),
+                  const SizedBox(height: 20),
+                  if (active != null)
+                    _HeroLessonCard(
+                      lesson: active,
+                      buttonLabel: active.status == 'completed' ? 'Retry lesson' : 'Start learning',
+                      onPressed: () {
+                        if (active.status == 'completed') {
+                          controller.retryLesson(active.lessonId);
+                        } else {
+                          controller.selectLesson(active.lessonId);
+                        }
+                        Navigator.pushNamed(context, '/lesson/learn');
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'The backend now owns exactly three demo lessons and this feed reflects them directly.',
-                    style: TextStyle(height: 1.5),
-                  ),
-                  const SizedBox(height: 16),
+                  if (upcoming.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Up next',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF112032),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    for (final lesson in upcoming) ...[
+                      _LessonQueueCard(
+                        lesson: lesson,
+                        onTap: () {
+                          controller.selectLesson(lesson.lessonId);
+                          Navigator.pushNamed(context, '/lesson/learn');
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+                  ],
+                  if (completed.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Completed lessons',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF112032),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    for (final lesson in completed) ...[
+                      _CompletedLessonCard(
+                        lesson: lesson,
+                        onRetry: () {
+                          controller.retryLesson(lesson.lessonId);
+                          Navigator.pushNamed(context, '/lesson/learn');
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+                  ],
                 ],
               ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            sliver: SliverList.builder(
-              itemCount: previousLessons.length,
-              itemBuilder: (context, index) {
-                final lesson = previousLessons[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: _LessonListCard(lesson: lesson),
-                );
-              },
             ),
           ),
         ],
       ),
     );
   }
+
+  LessonFeedItemModel? _pickActiveLesson(List<LessonFeedItemModel> lessons, String? activeLessonId) {
+    for (final lesson in lessons) {
+      if (lesson.status != 'completed') {
+        return lesson;
+      }
+    }
+    if (activeLessonId != null) {
+      for (final lesson in lessons) {
+        if (lesson.lessonId == activeLessonId) {
+          return lesson;
+        }
+      }
+    }
+    return lessons.isEmpty ? null : lessons.first;
+  }
 }
 
-class _TodayCard extends StatelessWidget {
-  const _TodayCard({required this.lesson});
+class _HeroLessonCard extends StatelessWidget {
+  const _HeroLessonCard({
+    required this.lesson,
+    required this.buttonLabel,
+    required this.onPressed,
+  });
 
   final LessonFeedItemModel lesson;
+  final String buttonLabel;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    final controller = AppScope.of(context);
-
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -268,7 +316,9 @@ class _TodayCard extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               _MetricChip(
-                icon: Icons.check_circle_outline_rounded,
+                icon: lesson.status == 'completed'
+                    ? Icons.replay_rounded
+                    : Icons.play_circle_outline_rounded,
                 label: lesson.status,
               ),
             ],
@@ -277,15 +327,12 @@ class _TodayCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                controller.selectLesson(lesson.lessonId);
-                Navigator.pushNamed(context, '/lesson/reading');
-              },
+              onPressed: onPressed,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFFE2B6),
                 foregroundColor: const Color(0xFF112032),
               ),
-              child: const Text('Start learning'),
+              child: Text(buttonLabel),
             ),
           ),
         ],
@@ -294,27 +341,90 @@ class _TodayCard extends StatelessWidget {
   }
 }
 
-class _LessonListCard extends StatelessWidget {
-  const _LessonListCard({required this.lesson});
+class _LessonQueueCard extends StatelessWidget {
+  const _LessonQueueCard({
+    required this.lesson,
+    required this.onTap,
+  });
 
   final LessonFeedItemModel lesson;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final controller = AppScope.of(context);
+    return _LessonBaseCard(
+      lesson: lesson,
+      trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8)),
+      onTap: onTap,
+    );
+  }
+}
+
+class _CompletedLessonCard extends StatelessWidget {
+  const _CompletedLessonCard({
+    required this.lesson,
+    required this.onRetry,
+  });
+
+  final LessonFeedItemModel lesson;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return _LessonBaseCard(
+      lesson: lesson,
+      trailing: TextButton.icon(
+        onPressed: onRetry,
+        icon: const Icon(Icons.replay_rounded),
+        label: const Text('Retry'),
+      ),
+      onTap: onRetry,
+    );
+  }
+}
+
+class _LessonBaseCard extends StatelessWidget {
+  const _LessonBaseCard({
+    required this.lesson,
+    required this.trailing,
+    required this.onTap,
+  });
+
+  final LessonFeedItemModel lesson;
+  final Widget trailing;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     final colors = [
       const Color(0xFF2B6CB0),
       const Color(0xFF2C7A7B),
       const Color(0xFF805AD5),
+      const Color(0xFFEA580C),
+      const Color(0xFF0F766E),
     ];
-    final color = colors[(lesson.slot - 1).clamp(0, colors.length - 1)];
+    final gradientSets = [
+      [const Color(0xFFFEF3C7), const Color(0xFFF59E0B)],
+      [const Color(0xFFD1FAE5), const Color(0xFF10B981)],
+      [const Color(0xFFE0E7FF), const Color(0xFF6366F1)],
+      [const Color(0xFFFFEDD5), const Color(0xFFEA580C)],
+      [const Color(0xFFCCFBF1), const Color(0xFF0F766E)],
+    ];
+    final icons = [
+      Icons.auto_stories_rounded,
+      Icons.record_voice_over_rounded,
+      Icons.edit_note_rounded,
+      Icons.map_rounded,
+      Icons.track_changes_rounded,
+    ];
+    final index = (lesson.slot - 1).clamp(0, colors.length - 1);
+    final color = colors[index];
+    final gradient = gradientSets[index];
+    final icon = icons[index];
 
     return InkWell(
       borderRadius: BorderRadius.circular(24),
-      onTap: () {
-        controller.selectLesson(lesson.lessonId);
-        Navigator.pushNamed(context, '/lesson/reading');
-      },
+      onTap: onTap,
       child: Ink(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
@@ -324,15 +434,22 @@ class _LessonListCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 54,
-              height: 54,
+              width: 76,
+              height: 76,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(18),
+                gradient: LinearGradient(
+                  colors: gradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(22),
               ),
-              child: Icon(
-                lesson.status == 'completed' ? Icons.check_rounded : Icons.play_arrow_rounded,
-                color: color,
+              child: Center(
+                child: Icon(
+                  lesson.status == 'completed' ? Icons.check_rounded : icon,
+                  color: Colors.white,
+                  size: 34,
+                ),
               ),
             ),
             const SizedBox(width: 14),
@@ -366,10 +483,7 @@ class _LessonListCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: Color(0xFF94A3B8),
-            ),
+            trailing,
           ],
         ),
       ),
@@ -400,7 +514,14 @@ class _ProgressTab extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Overall score: ${progress.overallScore.toStringAsFixed(1)}%',
+          'Overall score: ${progress.overallScore.toStringAsFixed(1)}% | combined target ${progress.overallThreshold.toStringAsFixed(0)}%',
+        ),
+        const SizedBox(height: 6),
+        Text(
+          progress.meetsOverallThreshold
+              ? 'Combined progress is on track.'
+              : 'Combined progress is below the overall target.',
+          style: const TextStyle(color: Color(0xFF526071)),
         ),
         const SizedBox(height: 20),
         Text(
@@ -421,6 +542,9 @@ class _ProgressTab extends StatelessWidget {
             title: lesson.title,
             score: lesson.score == null ? null : '${lesson.score!.toStringAsFixed(0)}%',
             summary: lesson.summary,
+            longFeedback: lesson.longFeedback,
+            whatWentWell: lesson.whatWentWell,
+            whatToImprove: lesson.whatToImprove,
             color: const Color(0xFF0F766E),
             focus: lesson.focus,
           ),
@@ -488,7 +612,7 @@ class _ProfileTab extends StatelessWidget {
         _ProfileTile(
           icon: Icons.auto_graph_rounded,
           title: 'Current chapter',
-          subtitle: 'Chapter ${profile.currentChapter} with ${profile.promotionThreshold.toStringAsFixed(0)}% needed to promote',
+          subtitle: 'Level decisions use the combined 5-chapter score: ${profile.overallThreshold.toStringAsFixed(0)}% to advance, below 50% to relegate.',
         ),
         _ProfileTile(
           icon: Icons.track_changes_rounded,
@@ -606,6 +730,9 @@ class _InsightCard extends StatelessWidget {
     required this.title,
     required this.score,
     required this.summary,
+    required this.longFeedback,
+    required this.whatWentWell,
+    required this.whatToImprove,
     required this.color,
     required this.focus,
   });
@@ -613,6 +740,9 @@ class _InsightCard extends StatelessWidget {
   final String title;
   final String? score;
   final String summary;
+  final String longFeedback;
+  final List<String> whatWentWell;
+  final List<String> whatToImprove;
   final Color color;
   final String focus;
 
@@ -667,7 +797,31 @@ class _InsightCard extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 14),
-          Text(summary),
+          Text(longFeedback.isEmpty ? summary : longFeedback),
+          if (whatWentWell.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'What went well',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF112032),
+              ),
+            ),
+            const SizedBox(height: 6),
+            for (final item in whatWentWell.take(3)) Text('- $item'),
+          ],
+          if (whatToImprove.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'What to improve',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF112032),
+              ),
+            ),
+            const SizedBox(height: 6),
+            for (final item in whatToImprove.take(3)) Text('- $item'),
+          ],
           const SizedBox(height: 12),
           Text(
             'Focus: $focus',

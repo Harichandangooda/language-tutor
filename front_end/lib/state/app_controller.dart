@@ -14,6 +14,7 @@ class AppController extends ChangeNotifier {
   ProfileSummaryModel? profile;
   List<FlashcardModel> flashcards = const [];
   String? activeLessonId;
+  bool isReviewMode = false;
   String writingDraft = '';
   String speakingDraft = '';
   int selectedLevel = 1;
@@ -21,6 +22,8 @@ class AppController extends ChangeNotifier {
 
   bool isBusy = false;
   String? errorMessage;
+  String loadingTitle = 'Preparing your lesson plan';
+  String loadingMessage = 'Checking your profile, loading today\'s lesson, and setting up the next learning path.';
 
   Future<void> login(String email, String password) async {
     isBusy = true;
@@ -46,19 +49,26 @@ class AppController extends ChangeNotifier {
 
     isBusy = true;
     errorMessage = null;
+    _setLoadingState(
+      title: 'Checking your profile',
+      message: 'Loading your account, progress history, and current level setup.',
+    );
     notifyListeners();
 
     try {
-      final results = await Future.wait<dynamic>([
-        _apiClient.fetchLessons(userId),
+      final overviewResults = await Future.wait<dynamic>([
         _apiClient.fetchProgress(userId),
         _apiClient.fetchProfile(userId),
         _apiClient.fetchFlashcards(userId),
       ]);
-      lessons = results[0] as List<LessonFeedItemModel>;
-      progress = results[1] as ProgressSummaryModel;
-      profile = results[2] as ProfileSummaryModel;
-      flashcards = results[3] as List<FlashcardModel>;
+      progress = overviewResults[0] as ProgressSummaryModel;
+      profile = overviewResults[1] as ProfileSummaryModel;
+      flashcards = overviewResults[2] as List<FlashcardModel>;
+      _setLoadingState(
+        title: 'Generating lesson cards',
+        message: 'Preparing the next lesson pack and caching the core teaching flow.',
+      );
+      lessons = await _apiClient.fetchLessons(userId);
       if (profile != null) {
         selectedLevel = profile!.currentLevelValue;
         selectedLevelName = profile!.currentLevelName;
@@ -66,7 +76,27 @@ class AppController extends ChangeNotifier {
       if (lessons.isEmpty) {
         activeLessonId = null;
       } else if (activeLessonId == null || lessons.every((item) => item.lessonId != activeLessonId)) {
-        activeLessonId = lessons.first.lessonId;
+        activeLessonId = _defaultLessonId();
+        isReviewMode = false;
+      }
+      if (activeLessonId != null) {
+        _setLoadingState(
+          title: 'Preparing practice',
+          message: 'Warming up the first lesson so reading, listening, writing, and speaking open faster.',
+        );
+        await Future.wait<dynamic>([
+          fetchLearn(),
+          fetchPractice(),
+          fetchReading(),
+          fetchListening(),
+          fetchWriting(),
+          fetchSpeaking(),
+        ]);
+        _setLoadingState(
+          title: 'Building assessment',
+          message: 'Creating the final lesson quiz separately so the first screens load sooner.',
+        );
+        await fetchAssessment();
       }
     } catch (error) {
       errorMessage = error.toString();
@@ -75,6 +105,15 @@ class AppController extends ChangeNotifier {
       isBusy = false;
       notifyListeners();
     }
+  }
+
+  void _setLoadingState({
+    required String title,
+    required String message,
+  }) {
+    loadingTitle = title;
+    loadingMessage = message;
+    notifyListeners();
   }
 
   Future<void> setPlacementLevel(int level) async {
@@ -100,6 +139,15 @@ class AppController extends ChangeNotifier {
   }
 
   void selectLesson(String lessonId) {
+    isReviewMode = false;
+    activeLessonId = lessonId;
+    writingDraft = '';
+    speakingDraft = '';
+    notifyListeners();
+  }
+
+  void retryLesson(String lessonId) {
+    isReviewMode = true;
     activeLessonId = lessonId;
     writingDraft = '';
     speakingDraft = '';
@@ -125,6 +173,14 @@ class AppController extends ChangeNotifier {
     return _apiClient.fetchReading(_requireActiveLessonId());
   }
 
+  Future<LearnContentModel> fetchLearn() async {
+    return _apiClient.fetchLearn(_requireActiveLessonId());
+  }
+
+  Future<PracticeContentModel> fetchPractice() async {
+    return _apiClient.fetchPractice(_requireActiveLessonId());
+  }
+
   Future<ListeningContentModel> fetchListening() async {
     return _apiClient.fetchListening(_requireActiveLessonId());
   }
@@ -142,9 +198,11 @@ class AppController extends ChangeNotifier {
   }
 
   Future<AssessmentResultModel> submitAssessment({
-    required String selectedAnswer,
+    required List<String> readingAnswers,
+    required List<String> listeningAnswers,
     required String writingResponse,
     required String speakingTranscript,
+    required List<String> selectedAnswers,
   }) async {
     final userId = session?.userId;
     if (userId == null) {
@@ -154,9 +212,11 @@ class AppController extends ChangeNotifier {
     final result = await _apiClient.submitAssessment(
       lessonId: _requireActiveLessonId(),
       userId: userId,
-      selectedAnswer: selectedAnswer,
+      readingAnswers: readingAnswers,
+      listeningAnswers: listeningAnswers,
       writingResponse: writingResponse.isEmpty ? writingDraft : writingResponse,
       speakingTranscript: speakingTranscript.isEmpty ? speakingDraft : speakingTranscript,
+      selectedAnswers: selectedAnswers,
     );
     await refreshAppData();
     return result;
@@ -168,6 +228,15 @@ class AppController extends ChangeNotifier {
       throw Exception('No lesson selected');
     }
     return lessonId;
+  }
+
+  String? _defaultLessonId() {
+    for (final lesson in lessons) {
+      if (lesson.status != 'completed') {
+        return lesson.lessonId;
+      }
+    }
+    return lessons.first.lessonId;
   }
 }
 

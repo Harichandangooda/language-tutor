@@ -65,44 +65,84 @@ def level_cefr(level: int) -> str:
     return LEVEL_DEFINITIONS[level].cefr
 
 
-def build_demo_lessons(level: int, chapter: int) -> list[dict[str, object]]:
+def build_demo_lessons(
+    level: int,
+    chapter: int,
+    lesson_count: int = 3,
+    cycle: int = 1,
+    focus_profile: dict[str, object] | None = None,
+) -> list[dict[str, object]]:
     definition = LEVEL_DEFINITIONS[level]
     chapter_label = f"Chapter {chapter}"
-    return [
-        {
-            "slot": 1,
-            "slug": f"level-{level}-chapter-{chapter}-lesson-1",
-            "day_label": chapter_label,
-            "title_hint": f"{definition.name} Chapter {chapter}: Warm-up Reading",
-            "objective_hint": f"Read and understand German around {definition.focus}.",
-            "scenario": f"{definition.name} learner working through chapter {chapter} with a focus on {definition.focus}.",
-            "grammar_focus": definition.grammar_focus,
-            "vocabulary_focus": definition.vocabulary_focus,
-            "difficulty": definition.cefr,
-        },
-        {
-            "slot": 2,
-            "slug": f"level-{level}-chapter-{chapter}-lesson-2",
-            "day_label": chapter_label,
-            "title_hint": f"{definition.name} Chapter {chapter}: Conversation Builder",
-            "objective_hint": f"Listen and respond naturally in German about {definition.focus}.",
-            "scenario": f"Conversation-focused practice for chapter {chapter} around {definition.focus}.",
-            "grammar_focus": definition.grammar_focus,
-            "vocabulary_focus": definition.vocabulary_focus,
-            "difficulty": definition.cefr,
-        },
-        {
-            "slot": 3,
-            "slug": f"level-{level}-chapter-{chapter}-lesson-3",
-            "day_label": chapter_label,
-            "title_hint": f"{definition.name} Chapter {chapter}: Chapter Checkpoint",
-            "objective_hint": f"Apply chapter {chapter} German in reading, writing, and speaking.",
-            "scenario": f"Checkpoint lesson for chapter {chapter} that tests {definition.focus}.",
-            "grammar_focus": definition.grammar_focus,
-            "vocabulary_focus": definition.vocabulary_focus,
-            "difficulty": definition.cefr,
-        },
+    focus_profile = focus_profile or {}
+    weak_topics = [str(item) for item in focus_profile.get("weak_topics", []) if item]
+    weak_words = [str(item) for item in focus_profile.get("weak_words", []) if item]
+    weakest_skills = [str(item) for item in focus_profile.get("weakest_skills", []) if item]
+    focus_override = str(focus_profile.get("focus_override") or "").strip()
+    target_focus = focus_override or definition.focus
+    target_grammar = str(focus_profile.get("grammar_focus") or definition.grammar_focus)
+    target_vocabulary = weak_words[:4] or list(definition.vocabulary_focus)
+    reset_hint = ""
+    if cycle > 1 and (weak_topics or weakest_skills or weak_words):
+        reset_hint = (
+            " Retry focus: "
+            f"skills={', '.join(weakest_skills) if weakest_skills else 'general output'}; "
+            f"topics={', '.join(weak_topics) if weak_topics else target_grammar}; "
+            f"words={', '.join(target_vocabulary)}."
+        )
+
+    templates = [
+        (
+            "Warm-up Reading",
+            "Read and understand German around {focus}.",
+            "{level_name} learner working through chapter {chapter} with a focus on {focus}.",
+        ),
+        (
+            "Conversation Builder",
+            "Listen and respond naturally in German about {focus}.",
+            "Conversation-focused practice for chapter {chapter} around {focus}.",
+        ),
+        (
+            "Chapter Checkpoint",
+            "Apply chapter {chapter} German in reading, writing, and speaking.",
+            "Checkpoint lesson for chapter {chapter} that tests {focus}.",
+        ),
+        (
+            "Real-Life Response",
+            "Use German in practical real-world responses tied to {focus}.",
+            "Applied German lesson for chapter {chapter} centered on {focus}.",
+        ),
+        (
+            "Confidence Builder",
+            "Strengthen speaking and writing control around {focus}.",
+            "Fresh retry lesson for chapter {chapter} with new examples about {focus}.",
+        ),
     ]
+    lessons: list[dict[str, object]] = []
+    for slot in range(1, lesson_count + 1):
+        title_suffix, objective_template, scenario_template = templates[(slot - 1) % len(templates)]
+        cycle_suffix = "" if cycle == 1 else f"-cycle-{cycle}"
+        lessons.append(
+            {
+                "slot": slot,
+                "slug": f"level-{level}-chapter-{chapter}-lesson-{slot}{cycle_suffix}",
+                "day_label": chapter_label,
+                "title_hint": f"{definition.name} Chapter {chapter}: {title_suffix}",
+                "objective_hint": objective_template.format(focus=target_focus, chapter=chapter),
+                "scenario": scenario_template.format(
+                    level_name=definition.name,
+                    chapter=chapter,
+                    focus=target_focus,
+                )
+                + reset_hint,
+                "grammar_focus": target_grammar,
+                "vocabulary_focus": target_vocabulary,
+                "difficulty": definition.cefr,
+                "cycle": cycle,
+                "reset_focus_profile": focus_profile,
+            }
+        )
+    return lessons
 
 
 def seeded_chapter_history(level: int) -> list[dict[str, object]]:
@@ -132,8 +172,16 @@ def build_progression_state(level: int) -> dict[str, object]:
         "current_level_cefr": definition.cefr,
         "current_chapter": 5,
         "completed_chapters": [1, 2, 3, 4],
-        "promotion_threshold": 60.0,
+        "active_lesson_count": 3,
+        "content_cycle": 1,
+        "chapter_promotion_threshold": 60.0,
+        "overall_threshold": 80.0,
+        "relegation_threshold": 50.0,
         "chapter_history": seeded_chapter_history(level),
+        "last_completed_chapter_history": [],
+        "level_attempt_history": [],
         "last_chapter_average": None,
+        "last_level_average": None,
         "last_result": "in_progress",
+        "reset_focus_profile": {},
     }

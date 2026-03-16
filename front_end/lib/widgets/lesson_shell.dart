@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../models/app_models.dart';
+
 class LessonShell extends StatelessWidget {
   const LessonShell({
     super.key,
@@ -13,6 +15,7 @@ class LessonShell extends StatelessWidget {
     this.nextRoute,
     this.nextLabel = 'Next',
     this.onNext,
+    this.nextEnabled = true,
   });
 
   final String title;
@@ -25,6 +28,7 @@ class LessonShell extends StatelessWidget {
   final String? nextRoute;
   final String nextLabel;
   final VoidCallback? onNext;
+  final bool nextEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -130,12 +134,14 @@ class LessonShell extends StatelessWidget {
                   if (previousRoute != null) const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: onNext ??
-                          () {
-                            if (nextRoute != null) {
-                              Navigator.pushReplacementNamed(context, nextRoute!);
-                            }
-                          },
+                      onPressed: !nextEnabled
+                          ? null
+                          : onNext ??
+                              () {
+                                if (nextRoute != null) {
+                                  Navigator.pushReplacementNamed(context, nextRoute!);
+                                }
+                              },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: accentColor,
                         foregroundColor: Colors.white,
@@ -194,11 +200,13 @@ class MarkdownSection extends StatelessWidget {
     required this.eyebrow,
     required this.title,
     required this.body,
+    this.translation,
   });
 
   final String eyebrow;
   final String title;
   final String body;
+  final TranslatableTextModel? translation;
 
   @override
   Widget build(BuildContext context) {
@@ -233,6 +241,109 @@ class MarkdownSection extends StatelessWidget {
               color: Color(0xFF334155),
             ),
           ),
+          if (translation != null) ...[
+            const SizedBox(height: 18),
+            TranslationRevealCard(
+              text: translation!,
+              accentColor: const Color(0xFFD97706),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class TranslationRevealCard extends StatefulWidget {
+  const TranslationRevealCard({
+    super.key,
+    required this.text,
+    required this.accentColor,
+  });
+
+  final TranslatableTextModel text;
+  final Color accentColor;
+
+  @override
+  State<TranslationRevealCard> createState() => _TranslationRevealCardState();
+}
+
+class _TranslationRevealCardState extends State<TranslationRevealCard> {
+  bool _showWordMeanings = false;
+  bool _showFullTranslation = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _showWordMeanings = !_showWordMeanings;
+                  });
+                },
+                icon: const Icon(Icons.translate_rounded),
+                label: Text(_showWordMeanings ? 'Hide word meanings' : 'Reveal word meanings'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _showFullTranslation = !_showFullTranslation;
+                  });
+                },
+                icon: const Icon(Icons.text_snippet_outlined),
+                label: Text(_showFullTranslation ? 'Hide full translation' : 'Translate phrase'),
+              ),
+            ],
+          ),
+          if (_showWordMeanings && widget.text.wordGlosses.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: widget.text.wordGlosses
+                  .map(
+                    (gloss) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: widget.accentColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '${gloss.word} = ${gloss.meaning}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: widget.accentColor,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+          if (_showFullTranslation) ...[
+            const SizedBox(height: 14),
+            Text(
+              widget.text.englishTranslation,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF334155),
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../models/app_models.dart';
 import '../../state/app_controller.dart';
 import '../../widgets/lesson_shell.dart';
 
@@ -12,6 +13,9 @@ class SpeakingPage extends StatefulWidget {
 
 class _SpeakingPageState extends State<SpeakingPage> {
   final TextEditingController _transcriptController = TextEditingController();
+  bool _submitted = false;
+  int _matchedPhrases = 0;
+  int _expectedPhraseCount = 0;
 
   @override
   void dispose() {
@@ -25,12 +29,13 @@ class _SpeakingPageState extends State<SpeakingPage> {
 
     return LessonShell(
       title: 'Speaking',
-      subtitle: 'Speaking prompts and phrase targets come from the backend lesson content.',
-      stepLabel: 'Step 4 of 5',
-      progress: 0.8,
+      subtitle: 'This is speaking practice. Retry here as much as you want before the final assessment.',
+      stepLabel: 'Step 6 of 7',
+      progress: 0.86,
       accentColor: const Color(0xFF7C3AED),
       previousRoute: '/lesson/writing',
       nextRoute: '/lesson/assessment',
+      nextEnabled: _submitted && _expectedPhraseCount > 0 && _matchedPhrases == _expectedPhraseCount,
       body: FutureBuilder(
         future: controller.fetchSpeaking(),
         builder: (context, snapshot) {
@@ -42,6 +47,7 @@ class _SpeakingPageState extends State<SpeakingPage> {
           }
 
           final speaking = snapshot.data!;
+          _expectedPhraseCount = speaking.expectedPhrases.length;
           return Column(
             children: [
               LessonCard(
@@ -72,12 +78,17 @@ class _SpeakingPageState extends State<SpeakingPage> {
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      speaking.prompt,
+                      speaking.prompt.text,
                       style: const TextStyle(
                         fontSize: 16,
                         height: 1.8,
                         color: Color(0xFF334155),
                       ),
+                    ),
+                    const SizedBox(height: 14),
+                    TranslationRevealCard(
+                      text: speaking.prompt,
+                      accentColor: const Color(0xFF7C3AED),
                     ),
                     if (speaking.expectedPhrases.isNotEmpty) ...[
                       const SizedBox(height: 18),
@@ -87,16 +98,13 @@ class _SpeakingPageState extends State<SpeakingPage> {
                         children: speaking.expectedPhrases
                             .map(
                               (phrase) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF5F3FF),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: Text(
-                                  phrase,
+                                  phrase.text,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFF5B21B6),
@@ -106,8 +114,15 @@ class _SpeakingPageState extends State<SpeakingPage> {
                             )
                             .toList(),
                       ),
+                      const SizedBox(height: 12),
+                      for (final phrase in speaking.expectedPhrases) ...[
+                        TranslationRevealCard(
+                          text: phrase,
+                          accentColor: const Color(0xFF7C3AED),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
                     ],
-                    const SizedBox(height: 18),
                     TextField(
                       controller: _transcriptController,
                       onChanged: controller.updateSpeakingDraft,
@@ -122,6 +137,46 @@ class _SpeakingPageState extends State<SpeakingPage> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _submitted = true;
+                                _matchedPhrases = _matchCount(
+                                  _transcriptController.text,
+                                  speaking.expectedPhrases,
+                                );
+                              });
+                            },
+                            child: const Text('Submit speaking practice'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              _transcriptController.clear();
+                              controller.updateSpeakingDraft('');
+                              setState(() {
+                                _submitted = false;
+                                _matchedPhrases = 0;
+                              });
+                            },
+                            child: const Text('Retry speaking'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_submitted) ...[
+                      const SizedBox(height: 14),
+                      Text(
+                        'You used $_matchedPhrases of ${speaking.expectedPhrases.length} target phrases.',
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -130,6 +185,11 @@ class _SpeakingPageState extends State<SpeakingPage> {
         },
       ),
     );
+  }
+
+  int _matchCount(String response, List<TranslatableTextModel> expected) {
+    final lowered = response.toLowerCase();
+    return expected.where((item) => lowered.contains(item.text.toLowerCase())).length;
   }
 }
 

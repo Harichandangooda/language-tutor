@@ -69,7 +69,7 @@ class _LevelSelectorPageState extends State<LevelSelectorPage> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'For the demo, this resets Hari to chapter 5 of the selected level and generates three fresh lessons for that level.',
+                  'For the demo, this resets Hari to chapter 5 of the selected level and generates a fresh lesson set for that level.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.82),
                     height: 1.6,

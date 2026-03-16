@@ -91,4 +91,11 @@ class EvaluatorService:
             "weaknesses": list(dict.fromkeys(weaknesses)),
             "flashcard_words": flashcard_words,
             "next_focus": next_focus,
+            "long_feedback": (
+                "You are building useful German communication skills. "
+                f"Your strongest areas were {', '.join(strengths) if strengths else 'effort and completion'}. "
+                f"The main areas to improve are {', '.join(weaknesses) if weaknesses else 'more precise output and recall'}."
+            ),
+            "what_went_well": list(dict.fromkeys(strengths))[:4],
+            "what_to_improve": list(dict.fromkeys(weaknesses))[:4],
         }

@@ -36,6 +36,8 @@ class LessonFeedItemModel {
     required this.title,
     required this.objective,
     required this.status,
+    required this.imageUrl,
+    required this.imagePrompt,
     required this.level,
     required this.chapter,
     required this.isToday,
@@ -48,6 +50,8 @@ class LessonFeedItemModel {
   final String title;
   final String objective;
   final String status;
+  final String? imageUrl;
+  final String? imagePrompt;
   final int? level;
   final int? chapter;
   final bool isToday;
@@ -61,9 +65,156 @@ class LessonFeedItemModel {
       title: json['title'] as String,
       objective: json['objective'] as String,
       status: json['status'] as String,
+      imageUrl: json['image_url'] as String?,
+      imagePrompt: json['image_prompt'] as String?,
       level: json['level'] as int?,
       chapter: json['chapter'] as int?,
       isToday: json['is_today'] as bool,
+    );
+  }
+}
+
+class VocabularyItemModel {
+  const VocabularyItemModel({
+    required this.word,
+    required this.meaning,
+    required this.example,
+  });
+
+  final String word;
+  final String meaning;
+  final TranslatableTextModel example;
+
+  factory VocabularyItemModel.fromJson(Map<String, dynamic> json) {
+    return VocabularyItemModel(
+      word: json['word'] as String,
+      meaning: json['meaning'] as String,
+      example: TranslatableTextModel.fromJson(json['example'] as Map<String, dynamic>),
+    );
+  }
+}
+
+class WordGlossModel {
+  const WordGlossModel({
+    required this.word,
+    required this.meaning,
+  });
+
+  final String word;
+  final String meaning;
+
+  factory WordGlossModel.fromJson(Map<String, dynamic> json) {
+    return WordGlossModel(
+      word: json['word'] as String,
+      meaning: json['meaning'] as String,
+    );
+  }
+}
+
+class TranslatableTextModel {
+  const TranslatableTextModel({
+    required this.text,
+    required this.englishTranslation,
+    required this.wordGlosses,
+  });
+
+  final String text;
+  final String englishTranslation;
+  final List<WordGlossModel> wordGlosses;
+
+  factory TranslatableTextModel.fromJson(Map<String, dynamic> json) {
+    return TranslatableTextModel(
+      text: json['text'] as String,
+      englishTranslation: json['english_translation'] as String,
+      wordGlosses: (json['word_glosses'] as List<dynamic>? ?? [])
+          .map((item) => WordGlossModel.fromJson(item as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class DialogueLineModel {
+  const DialogueLineModel({
+    required this.speaker,
+    required this.line,
+  });
+
+  final String speaker;
+  final TranslatableTextModel line;
+
+  factory DialogueLineModel.fromJson(Map<String, dynamic> json) {
+    return DialogueLineModel(
+      speaker: json['speaker'] as String,
+      line: TranslatableTextModel.fromJson(json['line'] as Map<String, dynamic>),
+    );
+  }
+}
+
+class LearnContentModel {
+  const LearnContentModel({
+    required this.intro,
+    required this.grammarTip,
+    required this.coachingTip,
+    required this.vocabulary,
+    required this.dialogue,
+  });
+
+  final TranslatableTextModel intro;
+  final TranslatableTextModel grammarTip;
+  final String coachingTip;
+  final List<VocabularyItemModel> vocabulary;
+  final List<DialogueLineModel> dialogue;
+
+  factory LearnContentModel.fromJson(Map<String, dynamic> json) {
+    return LearnContentModel(
+      intro: TranslatableTextModel.fromJson(json['intro'] as Map<String, dynamic>),
+      grammarTip: TranslatableTextModel.fromJson(json['grammar_tip'] as Map<String, dynamic>),
+      coachingTip: json['coaching_tip'] as String,
+      vocabulary: (json['vocabulary'] as List<dynamic>? ?? [])
+          .map((item) => VocabularyItemModel.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      dialogue: (json['dialogue'] as List<dynamic>? ?? [])
+          .map((item) => DialogueLineModel.fromJson(item as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class PracticeItemModel {
+  const PracticeItemModel({
+    required this.prompt,
+    required this.answer,
+    required this.hint,
+  });
+
+  final TranslatableTextModel prompt;
+  final TranslatableTextModel answer;
+  final String hint;
+
+  factory PracticeItemModel.fromJson(Map<String, dynamic> json) {
+    return PracticeItemModel(
+      prompt: TranslatableTextModel.fromJson(json['prompt'] as Map<String, dynamic>),
+      answer: TranslatableTextModel.fromJson(json['answer'] as Map<String, dynamic>),
+      hint: json['hint'] as String,
+    );
+  }
+}
+
+class PracticeContentModel {
+  const PracticeContentModel({
+    required this.intro,
+    required this.items,
+  });
+
+  final TranslatableTextModel intro;
+  final List<PracticeItemModel> items;
+
+  factory PracticeContentModel.fromJson(Map<String, dynamic> json) {
+    return PracticeContentModel(
+      intro: TranslatableTextModel.fromJson(json['intro'] as Map<String, dynamic>),
+      items: (json['items'] as List<dynamic>? ?? [])
+          .map((item) => PracticeItemModel.fromJson(item as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
@@ -74,13 +225,13 @@ class QuestionAnswerModel {
     required this.answer,
   });
 
-  final String question;
-  final String answer;
+  final TranslatableTextModel question;
+  final TranslatableTextModel answer;
 
   factory QuestionAnswerModel.fromJson(Map<String, dynamic> json) {
     return QuestionAnswerModel(
-      question: json['question'] as String,
-      answer: (json['answer'] ?? '') as String,
+      question: TranslatableTextModel.fromJson(json['question'] as Map<String, dynamic>),
+      answer: TranslatableTextModel.fromJson(json['answer'] as Map<String, dynamic>),
     );
   }
 }
@@ -91,12 +242,12 @@ class ReadingContentModel {
     required this.questions,
   });
 
-  final String passage;
+  final TranslatableTextModel passage;
   final List<QuestionAnswerModel> questions;
 
   factory ReadingContentModel.fromJson(Map<String, dynamic> json) {
     return ReadingContentModel(
-      passage: json['passage'] as String,
+      passage: TranslatableTextModel.fromJson(json['passage'] as Map<String, dynamic>),
       questions: (json['questions'] as List<dynamic>? ?? [])
           .map((item) => QuestionAnswerModel.fromJson(item as Map<String, dynamic>))
           .toList(),
@@ -110,12 +261,12 @@ class ListeningContentModel {
     required this.questions,
   });
 
-  final String audioScript;
+  final TranslatableTextModel audioScript;
   final List<QuestionAnswerModel> questions;
 
   factory ListeningContentModel.fromJson(Map<String, dynamic> json) {
     return ListeningContentModel(
-      audioScript: json['audio_script'] as String,
+      audioScript: TranslatableTextModel.fromJson(json['audio_script'] as Map<String, dynamic>),
       questions: (json['questions'] as List<dynamic>? ?? [])
           .map((item) => QuestionAnswerModel.fromJson(item as Map<String, dynamic>))
           .toList(),
@@ -129,13 +280,15 @@ class WritingContentModel {
     required this.expectedKeywords,
   });
 
-  final String prompt;
-  final List<String> expectedKeywords;
+  final TranslatableTextModel prompt;
+  final List<TranslatableTextModel> expectedKeywords;
 
   factory WritingContentModel.fromJson(Map<String, dynamic> json) {
     return WritingContentModel(
-      prompt: json['prompt'] as String,
-      expectedKeywords: List<String>.from(json['expected_keywords'] as List<dynamic>? ?? const []),
+      prompt: TranslatableTextModel.fromJson(json['prompt'] as Map<String, dynamic>),
+      expectedKeywords: (json['expected_keywords'] as List<dynamic>? ?? [])
+          .map((item) => TranslatableTextModel.fromJson(item as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
@@ -146,13 +299,15 @@ class SpeakingContentModel {
     required this.expectedPhrases,
   });
 
-  final String prompt;
-  final List<String> expectedPhrases;
+  final TranslatableTextModel prompt;
+  final List<TranslatableTextModel> expectedPhrases;
 
   factory SpeakingContentModel.fromJson(Map<String, dynamic> json) {
     return SpeakingContentModel(
-      prompt: json['prompt'] as String,
-      expectedPhrases: List<String>.from(json['expected_phrases'] as List<dynamic>? ?? const []),
+      prompt: TranslatableTextModel.fromJson(json['prompt'] as Map<String, dynamic>),
+      expectedPhrases: (json['expected_phrases'] as List<dynamic>? ?? [])
+          .map((item) => TranslatableTextModel.fromJson(item as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
@@ -164,13 +319,13 @@ class AssessmentQuestionModel {
     required this.correctAnswer,
   });
 
-  final String question;
+  final TranslatableTextModel question;
   final List<String> options;
   final String correctAnswer;
 
   factory AssessmentQuestionModel.fromJson(Map<String, dynamic> json) {
     return AssessmentQuestionModel(
-      question: json['question'] as String,
+      question: TranslatableTextModel.fromJson(json['question'] as Map<String, dynamic>),
       options: List<String>.from(json['options'] as List<dynamic>? ?? const []),
       correctAnswer: json['correct_answer'] as String,
     );
@@ -178,12 +333,30 @@ class AssessmentQuestionModel {
 }
 
 class AssessmentContentModel {
-  const AssessmentContentModel({required this.questions});
+  const AssessmentContentModel({
+    required this.readingQuestions,
+    required this.listeningQuestions,
+    required this.writingPrompt,
+    required this.speakingPrompt,
+    required this.questions,
+  });
 
+  final List<QuestionAnswerModel> readingQuestions;
+  final List<QuestionAnswerModel> listeningQuestions;
+  final TranslatableTextModel writingPrompt;
+  final TranslatableTextModel speakingPrompt;
   final List<AssessmentQuestionModel> questions;
 
   factory AssessmentContentModel.fromJson(Map<String, dynamic> json) {
     return AssessmentContentModel(
+      readingQuestions: (json['reading_questions'] as List<dynamic>? ?? [])
+          .map((item) => QuestionAnswerModel.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      listeningQuestions: (json['listening_questions'] as List<dynamic>? ?? [])
+          .map((item) => QuestionAnswerModel.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      writingPrompt: TranslatableTextModel.fromJson(json['writing_prompt'] as Map<String, dynamic>),
+      speakingPrompt: TranslatableTextModel.fromJson(json['speaking_prompt'] as Map<String, dynamic>),
       questions: (json['questions'] as List<dynamic>? ?? [])
           .map((item) => AssessmentQuestionModel.fromJson(item as Map<String, dynamic>))
           .toList(),
@@ -200,6 +373,9 @@ class ProgressLessonModel {
     required this.score,
     required this.focus,
     required this.summary,
+    required this.longFeedback,
+    required this.whatWentWell,
+    required this.whatToImprove,
   });
 
   final String lessonId;
@@ -209,6 +385,9 @@ class ProgressLessonModel {
   final double? score;
   final String focus;
   final String summary;
+  final String longFeedback;
+  final List<String> whatWentWell;
+  final List<String> whatToImprove;
 
   factory ProgressLessonModel.fromJson(Map<String, dynamic> json) {
     return ProgressLessonModel(
@@ -219,6 +398,9 @@ class ProgressLessonModel {
       score: (json['score'] as num?)?.toDouble(),
       focus: json['focus'] as String,
       summary: json['summary'] as String,
+      longFeedback: (json['long_feedback'] ?? '') as String,
+      whatWentWell: List<String>.from(json['what_went_well'] as List<dynamic>? ?? const []),
+      whatToImprove: List<String>.from(json['what_to_improve'] as List<dynamic>? ?? const []),
     );
   }
 }
@@ -226,6 +408,8 @@ class ProgressLessonModel {
 class ProgressSummaryModel {
   const ProgressSummaryModel({
     required this.overallScore,
+    required this.overallThreshold,
+    required this.meetsOverallThreshold,
     required this.strengths,
     required this.weakTopics,
     required this.currentLevel,
@@ -236,6 +420,8 @@ class ProgressSummaryModel {
   });
 
   final double overallScore;
+  final double overallThreshold;
+  final bool meetsOverallThreshold;
   final List<String> strengths;
   final List<String> weakTopics;
   final int currentLevel;
@@ -247,6 +433,8 @@ class ProgressSummaryModel {
   factory ProgressSummaryModel.fromJson(Map<String, dynamic> json) {
     return ProgressSummaryModel(
       overallScore: (json['overall_score'] as num).toDouble(),
+      overallThreshold: (json['overall_threshold'] as num?)?.toDouble() ?? 80.0,
+      meetsOverallThreshold: (json['meets_overall_threshold'] as bool?) ?? false,
       strengths: List<String>.from(json['strengths'] as List<dynamic>? ?? const []),
       weakTopics: List<String>.from(json['weak_topics'] as List<dynamic>? ?? const []),
       currentLevel: json['current_level'] as int,
@@ -304,9 +492,14 @@ class ProfileSummaryModel {
     required this.totalLessons,
     required this.streakLabel,
     required this.currentChapter,
-    required this.promotionThreshold,
+    required this.chapterPromotionThreshold,
+    required this.overallThreshold,
     required this.mastered,
     required this.nextFocus,
+    required this.longFeedback,
+    required this.whatWentWell,
+    required this.whatToImprove,
+    required this.correctAnswers,
   });
 
   final String name;
@@ -320,9 +513,14 @@ class ProfileSummaryModel {
   final int totalLessons;
   final String streakLabel;
   final int currentChapter;
-  final double promotionThreshold;
+  final double chapterPromotionThreshold;
+  final double overallThreshold;
   final bool mastered;
   final String nextFocus;
+  final String longFeedback;
+  final List<String> whatWentWell;
+  final List<String> whatToImprove;
+  final Map<String, dynamic> correctAnswers;
 
   factory ProfileSummaryModel.fromJson(Map<String, dynamic> json) {
     return ProfileSummaryModel(
@@ -337,9 +535,14 @@ class ProfileSummaryModel {
       totalLessons: json['total_lessons'] as int,
       streakLabel: json['streak_label'] as String,
       currentChapter: json['current_chapter'] as int,
-      promotionThreshold: (json['promotion_threshold'] as num).toDouble(),
+      chapterPromotionThreshold: (json['chapter_promotion_threshold'] as num?)?.toDouble() ?? 60.0,
+      overallThreshold: (json['overall_threshold'] as num?)?.toDouble() ?? 80.0,
       mastered: (json['mastered'] ?? false) as bool,
       nextFocus: json['next_focus'] as String,
+      longFeedback: (json['long_feedback'] ?? '') as String,
+      whatWentWell: List<String>.from(json['what_went_well'] as List<dynamic>? ?? const []),
+      whatToImprove: List<String>.from(json['what_to_improve'] as List<dynamic>? ?? const []),
+      correctAnswers: Map<String, dynamic>.from(json['correct_answers'] as Map? ?? const {}),
     );
   }
 }
@@ -372,29 +575,44 @@ class AssessmentResultModel {
     required this.lessonCompleted,
     required this.chapterComplete,
     required this.chapterAverage,
+    required this.levelAverage,
     required this.levelOutcome,
     required this.currentLevel,
     required this.currentLevelName,
     required this.nextFocus,
+    required this.longFeedback,
+    required this.whatWentWell,
+    required this.whatToImprove,
+    required this.correctAnswers,
   });
 
   final bool lessonCompleted;
   final bool chapterComplete;
   final double? chapterAverage;
+  final double? levelAverage;
   final String? levelOutcome;
   final int? currentLevel;
   final String? currentLevelName;
   final String nextFocus;
+  final String longFeedback;
+  final List<String> whatWentWell;
+  final List<String> whatToImprove;
+  final Map<String, dynamic> correctAnswers;
 
   factory AssessmentResultModel.fromJson(Map<String, dynamic> json) {
     return AssessmentResultModel(
       lessonCompleted: json['lesson_completed'] as bool? ?? false,
       chapterComplete: json['chapter_complete'] as bool? ?? false,
       chapterAverage: (json['chapter_average'] as num?)?.toDouble(),
+      levelAverage: (json['level_average'] as num?)?.toDouble(),
       levelOutcome: json['level_outcome'] as String?,
       currentLevel: json['current_level'] as int?,
       currentLevelName: json['current_level_name'] as String?,
       nextFocus: (json['next_focus'] ?? '') as String,
+      longFeedback: (json['long_feedback'] ?? '') as String,
+      whatWentWell: List<String>.from(json['what_went_well'] as List<dynamic>? ?? const []),
+      whatToImprove: List<String>.from(json['what_to_improve'] as List<dynamic>? ?? const []),
+      correctAnswers: Map<String, dynamic>.from(json['correct_answers'] as Map? ?? const {}),
     );
   }
 }

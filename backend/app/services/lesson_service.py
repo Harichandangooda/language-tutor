@@ -30,6 +30,15 @@ class LessonService:
             "lessons": [self._to_feed_item(lesson) for lesson in lessons],
         }
 
+    def preload_lessons(self, user_id: str, warm_assessment: bool = False):
+        lessons = self._ensure_demo_lessons(user_id)
+        if warm_assessment and lessons:
+            self._ensure_assessment(lessons[0]["lesson_id"])
+        return {
+            "user_id": user_id,
+            "lessons_ready": len(lessons),
+        }
+
     def start_lesson(self, user_id: str):
         if not user_id or not user_id.strip():
             raise InvalidLessonRequestError("user_id is required to start a lesson")
@@ -48,6 +57,18 @@ class LessonService:
         if not card:
             raise LessonNotFoundError(f"Lesson card not found for lesson_id='{lesson_id}'")
         return card
+
+    def get_learn(self, lesson_id: str):
+        learn = self.lessons_repo.get_section(lesson_id, "learn")
+        if not learn:
+            raise LessonNotFoundError(f"Learn content not found for lesson_id='{lesson_id}'")
+        return learn
+
+    def get_practice(self, lesson_id: str):
+        practice = self.lessons_repo.get_section(lesson_id, "practice")
+        if not practice:
+            raise LessonNotFoundError(f"Practice content not found for lesson_id='{lesson_id}'")
+        return practice
 
     def get_reading(self, lesson_id: str):
         reading = self.lessons_repo.get_section(lesson_id, "reading")
@@ -74,7 +95,7 @@ class LessonService:
         return speaking
 
     def get_assessment(self, lesson_id: str):
-        assessment = self.lessons_repo.get_section(lesson_id, "assessment")
+        assessment = self._ensure_assessment(lesson_id)
         if not assessment:
             raise LessonNotFoundError(f"Assessment content not found for lesson_id='{lesson_id}'")
         return assessment
@@ -84,7 +105,15 @@ class LessonService:
         progression = learner_state.get("progression", build_progression_state(1))
         current_level = int(progression.get("current_level", 1))
         current_chapter = int(progression.get("current_chapter", 5))
-        blueprints = build_demo_lessons(current_level, current_chapter)
+        lesson_count = int(progression.get("active_lesson_count", 3))
+        content_cycle = int(progression.get("content_cycle", 1))
+        blueprints = build_demo_lessons(
+            current_level,
+            current_chapter,
+            lesson_count=lesson_count,
+            cycle=content_cycle,
+            focus_profile=progression.get("reset_focus_profile"),
+        )
 
         for blueprint in blueprints:
             existing = self.lessons_repo.get_by_user_and_slot(user_id, int(blueprint["slot"]))
@@ -92,12 +121,16 @@ class LessonService:
                 existing is not None
                 and existing.get("level") == current_level
                 and existing.get("chapter") == current_chapter
+                and int(existing.get("cycle", 1)) == content_cycle
             ):
                 continue
             if existing is not None:
                 self.lessons_repo.delete(existing["lesson_id"])
 
-            lesson_id = f"lesson_demo_{user_id}_l{current_level}_c{current_chapter}_{blueprint['slot']}"
+            lesson_id = (
+                f"lesson_demo_{user_id}_l{current_level}_c{current_chapter}"
+                f"_cycle{content_cycle}_{blueprint['slot']}"
+            )
             try:
                 lesson_package = self.lesson_generator.generate(
                     user_id=user_id,
@@ -115,14 +148,38 @@ class LessonService:
                 lesson_id=lesson_id,
                 user_id=user_id,
                 lesson_package=lesson_package_dict,
+                lesson_blueprint=blueprint,
                 slot=int(blueprint["slot"]),
                 slug=str(blueprint["slug"]),
                 day_label=str(blueprint["day_label"]),
                 level=current_level,
                 chapter=current_chapter,
+                cycle=content_cycle,
             )
 
         return self.lessons_repo.list_by_user(user_id)
+
+    def _ensure_assessment(self, lesson_id: str):
+        assessment = self.lessons_repo.get_section(lesson_id, "assessment")
+        if assessment:
+            return assessment
+
+        lesson = self.lessons_repo.get(lesson_id)
+        if not lesson:
+            return None
+
+        learner_state = self.learner_state_repo.get_or_create(lesson["user_id"])
+        lesson_package = dict(lesson["lesson_package"])
+        lesson_blueprint = dict(lesson.get("lesson_blueprint") or {})
+        lesson_core = {key: value for key, value in lesson_package.items() if key != "assessment"}
+        generated = self.lesson_generator.generate_assessment(
+            learner_state=learner_state,
+            lesson_blueprint=lesson_blueprint,
+            lesson_core=lesson_core,
+        )
+        lesson_package["assessment"] = generated.model_dump()
+        self.lessons_repo.update_lesson_package(lesson_id, lesson_package)
+        return lesson_package["assessment"]
 
     def _to_feed_item(self, lesson: dict):
         card = lesson["lesson_package"]["card"]
@@ -135,6 +192,8 @@ class LessonService:
             "title": card["title"],
             "objective": card["objective"],
             "status": lesson["status"],
+            "image_url": card.get("image_url"),
+            "image_prompt": card.get("image_prompt"),
             "level": lesson.get("level"),
             "chapter": lesson.get("chapter"),
             "is_today": slot == 1,

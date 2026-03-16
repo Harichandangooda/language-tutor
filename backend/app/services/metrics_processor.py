@@ -8,11 +8,11 @@ class MetricsProcessor:
         lesson_package = lesson.get("lesson_package", {})
         reading_score = self._score_open_answers(
             provided_answers=submission.get("reading_answers", []),
-            expected_items=lesson_package.get("reading", {}).get("questions", []),
+            expected_items=lesson_package.get("assessment", {}).get("reading_questions", []),
         )
         listening_score = self._score_open_answers(
             provided_answers=submission.get("listening_answers", []),
-            expected_items=lesson_package.get("listening", {}).get("questions", []),
+            expected_items=lesson_package.get("assessment", {}).get("listening_questions", []),
         )
 
         writing_text = submission.get("writing_response", "").strip().lower()
@@ -68,7 +68,8 @@ class MetricsProcessor:
         answer_text = " ".join(item.get("answer", "").lower() for item in provided_answers)
         matches = 0
         for item in expected_items:
-            expected_answer = item.get("answer", "").lower()
+            answer = item.get("answer", {})
+            expected_answer = self._extract_text(answer).lower()
             if expected_answer and expected_answer in answer_text:
                 matches += 1
         return round(matches / len(expected_items), 2)
@@ -96,7 +97,11 @@ class MetricsProcessor:
         if not expected_keywords:
             return 0.5
 
-        lowered_keywords = [keyword.lower() for keyword in expected_keywords if keyword.strip()]
+        lowered_keywords = [
+            self._extract_text(keyword).lower()
+            for keyword in expected_keywords
+            if self._extract_text(keyword).strip()
+        ]
         if not lowered_keywords:
             return 0.5
 
@@ -117,7 +122,13 @@ class MetricsProcessor:
 
         weak_words: list[str] = []
         for item in [*expected_keywords, *expected_phrases]:
-            lowered = item.lower().strip()
+            raw_text = self._extract_text(item)
+            lowered = raw_text.lower().strip()
             if lowered and lowered not in learner_text:
-                weak_words.append(item)
+                weak_words.append(raw_text)
         return list(dict.fromkeys(weak_words))[:5]
+
+    def _extract_text(self, item: Any) -> str:
+        if isinstance(item, dict):
+            return str(item.get("text", ""))
+        return str(item)

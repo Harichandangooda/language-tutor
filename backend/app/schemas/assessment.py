@@ -33,6 +33,9 @@ class AssessmentEvaluation(BaseModel):
     weaknesses: List[str] = Field(default_factory=list)
     flashcard_words: List[str] = Field(default_factory=list)
     next_focus: str
+    long_feedback: str = ""
+    what_went_well: List[str] = Field(default_factory=list)
+    what_to_improve: List[str] = Field(default_factory=list)
 
 
 class AssessmentResult(BaseModel):
@@ -41,8 +44,13 @@ class AssessmentResult(BaseModel):
     weaknesses: List[str]
     new_flashcards: List[str]
     next_focus: str
+    long_feedback: str = ""
+    what_went_well: List[str] = Field(default_factory=list)
+    what_to_improve: List[str] = Field(default_factory=list)
+    correct_answers: Dict[str, Any] = Field(default_factory=dict)
     chapter_complete: bool = False
     chapter_average: float | None = None
+    level_average: float | None = None
     level_outcome: str | None = None
     current_level: int | None = None
     current_level_name: str | None = None

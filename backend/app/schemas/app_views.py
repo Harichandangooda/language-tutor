@@ -13,6 +13,9 @@ class ProgressLessonItem(BaseModel):
     score: float | None = None
     focus: str
     summary: str
+    long_feedback: str = ""
+    what_went_well: List[str] = []
+    what_to_improve: List[str] = []
 
 
 class ChapterProgressItem(BaseModel):
@@ -27,6 +30,8 @@ class ChapterProgressItem(BaseModel):
 class ProgressSummaryResponse(BaseModel):
     user_id: str
     overall_score: float
+    overall_threshold: float
+    meets_overall_threshold: bool
     strengths: List[str]
     weak_topics: List[str]
     current_level: int
@@ -49,9 +54,14 @@ class ProfileSummaryResponse(BaseModel):
     total_lessons: int
     streak_label: str
     current_chapter: int
-    promotion_threshold: float
+    chapter_promotion_threshold: float
+    overall_threshold: float
     mastered: bool
     next_focus: str
+    long_feedback: str = ""
+    what_went_well: List[str] = []
+    what_to_improve: List[str] = []
+    correct_answers: dict = {}
 
 
 class FlashcardItem(BaseModel):

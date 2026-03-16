@@ -73,6 +73,16 @@ class ApiClient {
     return ReadingContentModel.fromJson(response);
   }
 
+  Future<LearnContentModel> fetchLearn(String lessonId) async {
+    final response = await _get('/lessons/$lessonId/learn');
+    return LearnContentModel.fromJson(response);
+  }
+
+  Future<PracticeContentModel> fetchPractice(String lessonId) async {
+    final response = await _get('/lessons/$lessonId/practice');
+    return PracticeContentModel.fromJson(response);
+  }
+
   Future<ListeningContentModel> fetchListening(String lessonId) async {
     final response = await _get('/lessons/$lessonId/listening');
     return ListeningContentModel.fromJson(response);
@@ -96,25 +106,30 @@ class ApiClient {
   Future<AssessmentResultModel> submitAssessment({
     required String lessonId,
     required String userId,
-    required String selectedAnswer,
+    required List<String> readingAnswers,
+    required List<String> listeningAnswers,
     required String writingResponse,
     required String speakingTranscript,
+    required List<String> selectedAnswers,
   }) async {
     final response = await _post(
       '/lessons/$lessonId/submit-assessment',
       {
         'user_id': userId,
-        'reading_answers': [
-          {'question_id': 'reading_1', 'answer': selectedAnswer},
-        ],
-        'listening_answers': [
-          {'question_id': 'listening_1', 'answer': selectedAnswer},
-        ],
+        'reading_answers': List.generate(
+          readingAnswers.length,
+          (index) => {'question_id': 'reading_${index + 1}', 'answer': readingAnswers[index]},
+        ),
+        'listening_answers': List.generate(
+          listeningAnswers.length,
+          (index) => {'question_id': 'listening_${index + 1}', 'answer': listeningAnswers[index]},
+        ),
         'writing_response': writingResponse,
         'speaking_transcript': speakingTranscript,
-        'assessment_answers': [
-          {'question_id': 'assessment_1', 'answer': selectedAnswer},
-        ],
+        'assessment_answers': List.generate(
+          selectedAnswers.length,
+          (index) => {'question_id': 'assessment_${index + 1}', 'answer': selectedAnswers[index]},
+        ),
       },
     );
     return AssessmentResultModel.fromJson(response);

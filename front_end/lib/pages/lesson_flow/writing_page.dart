@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../models/app_models.dart';
 import '../../state/app_controller.dart';
 import '../../widgets/lesson_shell.dart';
 
@@ -12,6 +13,9 @@ class WritingPage extends StatefulWidget {
 
 class _WritingPageState extends State<WritingPage> {
   final TextEditingController _responseController = TextEditingController();
+  bool _submitted = false;
+  int _matchedKeywords = 0;
+  int _expectedKeywordCount = 0;
 
   @override
   void dispose() {
@@ -25,12 +29,13 @@ class _WritingPageState extends State<WritingPage> {
 
     return LessonShell(
       title: 'Writing',
-      subtitle: 'Writing prompts and keywords now come from the backend lesson package.',
-      stepLabel: 'Step 3 of 5',
-      progress: 0.6,
+      subtitle: 'This is writing practice. Submit here, review feedback, and retry without changing your score.',
+      stepLabel: 'Step 5 of 7',
+      progress: 0.72,
       accentColor: const Color(0xFF2563EB),
       previousRoute: '/lesson/listening',
       nextRoute: '/lesson/speaking',
+      nextEnabled: _submitted && _expectedKeywordCount > 0 && _matchedKeywords == _expectedKeywordCount,
       body: FutureBuilder(
         future: controller.fetchWriting(),
         builder: (context, snapshot) {
@@ -42,6 +47,7 @@ class _WritingPageState extends State<WritingPage> {
           }
 
           final writing = snapshot.data!;
+          _expectedKeywordCount = writing.expectedKeywords.length;
           return Column(
             children: [
               LessonCard(
@@ -58,12 +64,17 @@ class _WritingPageState extends State<WritingPage> {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      writing.prompt,
+                      writing.prompt.text,
                       style: const TextStyle(
                         fontSize: 16,
                         height: 1.7,
                         color: Color(0xFF334155),
                       ),
+                    ),
+                    const SizedBox(height: 14),
+                    TranslationRevealCard(
+                      text: writing.prompt,
+                      accentColor: const Color(0xFF2563EB),
                     ),
                     const SizedBox(height: 18),
                     if (writing.expectedKeywords.isNotEmpty) ...[
@@ -81,16 +92,13 @@ class _WritingPageState extends State<WritingPage> {
                         children: writing.expectedKeywords
                             .map(
                               (word) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFDBEAFE),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: Text(
-                                  word,
+                                  word.text,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFF1D4ED8),
@@ -100,7 +108,14 @@ class _WritingPageState extends State<WritingPage> {
                             )
                             .toList(),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 12),
+                      for (final keyword in writing.expectedKeywords) ...[
+                        TranslationRevealCard(
+                          text: keyword,
+                          accentColor: const Color(0xFF2563EB),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
                     ],
                     TextField(
                       controller: _responseController,
@@ -116,6 +131,46 @@ class _WritingPageState extends State<WritingPage> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _submitted = true;
+                                _matchedKeywords = _matchCount(
+                                  _responseController.text,
+                                  writing.expectedKeywords,
+                                );
+                              });
+                            },
+                            child: const Text('Submit writing practice'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              _responseController.clear();
+                              controller.updateWritingDraft('');
+                              setState(() {
+                                _submitted = false;
+                                _matchedKeywords = 0;
+                              });
+                            },
+                            child: const Text('Retry writing'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_submitted) ...[
+                      const SizedBox(height: 14),
+                      Text(
+                        'You used $_matchedKeywords of ${writing.expectedKeywords.length} target phrases.',
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -124,6 +179,11 @@ class _WritingPageState extends State<WritingPage> {
         },
       ),
     );
+  }
+
+  int _matchCount(String response, List<TranslatableTextModel> expected) {
+    final lowered = response.toLowerCase();
+    return expected.where((item) => lowered.contains(item.text.toLowerCase())).length;
   }
 }
 

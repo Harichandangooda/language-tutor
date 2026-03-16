@@ -64,6 +64,34 @@ def get_card(
         ) from exc
 
 
+@router.get("/{lesson_id}/learn")
+def get_learn(
+    lesson_id: str,
+    service: LessonService = Depends(get_lesson_service),
+):
+    try:
+        return service.get_learn(lesson_id)
+    except LessonNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+
+@router.get("/{lesson_id}/practice")
+def get_practice(
+    lesson_id: str,
+    service: LessonService = Depends(get_lesson_service),
+):
+    try:
+        return service.get_practice(lesson_id)
+    except LessonNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+
 @router.get("/{lesson_id}/reading")
 def get_reading(
     lesson_id: str,

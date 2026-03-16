@@ -1,10 +1,28 @@
 import 'package:flutter/material.dart';
 
+import '../../models/app_models.dart';
 import '../../state/app_controller.dart';
 import '../../widgets/lesson_shell.dart';
 
-class ListeningPage extends StatelessWidget {
+class ListeningPage extends StatefulWidget {
   const ListeningPage({super.key});
+
+  @override
+  State<ListeningPage> createState() => _ListeningPageState();
+}
+
+class _ListeningPageState extends State<ListeningPage> {
+  final List<TextEditingController> _controllers = [];
+  bool _submitted = false;
+  int _correctCount = 0;
+
+  @override
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,12 +30,13 @@ class ListeningPage extends StatelessWidget {
 
     return LessonShell(
       title: 'Listening',
-      subtitle: 'Audio script and prompts now come from the selected backend lesson.',
-      stepLabel: 'Step 2 of 5',
-      progress: 0.4,
+      subtitle: 'This is listening practice. Submit and retry here without affecting your score.',
+      stepLabel: 'Step 4 of 7',
+      progress: 0.57,
       accentColor: const Color(0xFF0F766E),
       previousRoute: '/lesson/reading',
       nextRoute: '/lesson/writing',
+      nextEnabled: _submitted && _correctCount == _controllers.length && _controllers.isNotEmpty,
       body: FutureBuilder(
         future: controller.fetchListening(),
         builder: (context, snapshot) {
@@ -29,6 +48,7 @@ class ListeningPage extends StatelessWidget {
           }
 
           final listening = snapshot.data!;
+          _syncControllers(listening.questions.length);
           return Column(
             children: [
               LessonCard(
@@ -72,18 +92,8 @@ class ListeningPage extends StatelessWidget {
                               value: 0.38,
                               minHeight: 10,
                               backgroundColor: Color(0xFFD1FAE5),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Color(0xFF0F766E),
-                              ),
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0F766E)),
                             ),
-                          ),
-                          const SizedBox(height: 10),
-                          const Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('00:48'),
-                              Text('02:05'),
-                            ],
                           ),
                         ],
                       ),
@@ -99,12 +109,17 @@ class ListeningPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      listening.audioScript,
+                      listening.audioScript.text,
                       style: const TextStyle(
                         fontSize: 15,
                         height: 1.7,
                         color: Color(0xFF334155),
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    TranslationRevealCard(
+                      text: listening.audioScript,
+                      accentColor: const Color(0xFF0F766E),
                     ),
                     if (listening.questions.isNotEmpty) ...[
                       const SizedBox(height: 18),
@@ -117,15 +132,70 @@ class ListeningPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      for (final question in listening.questions) ...[
+                      for (var i = 0; i < listening.questions.length; i++) ...[
                         Text(
-                          question.question,
+                          listening.questions[i].question.text,
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
-                        const SizedBox(height: 6),
-                        Text(question.answer),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
+                        TranslationRevealCard(
+                          text: listening.questions[i].question,
+                          accentColor: const Color(0xFF0F766E),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _controllers[i],
+                          minLines: 2,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            hintText: 'Type your answer in German...',
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                        ),
+                        if (_submitted) ...[
+                          const SizedBox(height: 10),
+                          Text('Expected answer: ${listening.questions[i].answer.text}'),
+                          const SizedBox(height: 10),
+                          TranslationRevealCard(
+                            text: listening.questions[i].answer,
+                            accentColor: const Color(0xFF166534),
+                          ),
+                        ],
+                        const SizedBox(height: 14),
                       ],
+                    ],
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _submitted = true;
+                                _correctCount = _score(listening.questions);
+                              });
+                            },
+                            child: const Text('Submit listening practice'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _retry,
+                            child: const Text('Retry listening'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_submitted) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        'You got $_correctCount of ${listening.questions.length} listening answers right.',
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
                     ],
                   ],
                 ),
@@ -135,6 +205,39 @@ class ListeningPage extends StatelessWidget {
         },
       ),
     );
+  }
+
+  void _syncControllers(int count) {
+    while (_controllers.length < count) {
+      _controllers.add(TextEditingController());
+    }
+  }
+
+  int _score(List<QuestionAnswerModel> questions) {
+    var correct = 0;
+    for (var i = 0; i < questions.length; i++) {
+      if (_isCorrect(_controllers[i].text, questions[i].answer.text)) {
+        correct++;
+      }
+    }
+    return correct;
+  }
+
+  bool _isCorrect(String value, String expected) {
+    final normalizedValue = value.trim().toLowerCase();
+    final normalizedExpected = expected.trim().toLowerCase();
+    return normalizedValue.isNotEmpty &&
+        (normalizedValue == normalizedExpected || normalizedValue.contains(normalizedExpected));
+  }
+
+  void _retry() {
+    for (final controller in _controllers) {
+      controller.clear();
+    }
+    setState(() {
+      _submitted = false;
+      _correctCount = 0;
+    });
   }
 }
 

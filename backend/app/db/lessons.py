@@ -13,11 +13,13 @@ class LessonsRepository(InMemoryRepository[Dict[str, Any]]):
         lesson_id: str,
         user_id: str,
         lesson_package: Dict[str, Any],
+        lesson_blueprint: Dict[str, Any] | None = None,
         slot: int | None = None,
         slug: str | None = None,
         day_label: str | None = None,
         level: int | None = None,
         chapter: int | None = None,
+        cycle: int | None = None,
     ) -> Dict[str, Any]:
         record = {
             'lesson_id': lesson_id,
@@ -28,7 +30,9 @@ class LessonsRepository(InMemoryRepository[Dict[str, Any]]):
             'day_label': day_label,
             'level': level,
             'chapter': chapter,
+            'cycle': cycle,
             'lesson_package': deepcopy(lesson_package),
+            'lesson_blueprint': deepcopy(lesson_blueprint or {}),
             'created_at': datetime.now(timezone.utc).isoformat(),
         }
         return self.save(lesson_id, record)
@@ -72,4 +76,12 @@ class LessonsRepository(InMemoryRepository[Dict[str, Any]]):
             return None
         lesson['status'] = 'completed'
         lesson['completed_at'] = datetime.now(timezone.utc).isoformat()
+        return self.save(lesson_id, lesson)
+
+    def update_lesson_package(self, lesson_id: str, lesson_package: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        lesson = self.get(lesson_id)
+        if not lesson:
+            return None
+        lesson['lesson_package'] = deepcopy(lesson_package)
+        lesson['updated_at'] = datetime.now(timezone.utc).isoformat()
         return self.save(lesson_id, lesson)

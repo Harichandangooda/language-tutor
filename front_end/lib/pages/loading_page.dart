@@ -42,6 +42,7 @@ class _LoadingPageState extends State<LoadingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = AppScope.of(context);
     return Scaffold(
       body: DecoratedBox(
         decoration: const BoxDecoration(
@@ -72,10 +73,10 @@ class _LoadingPageState extends State<LoadingPage> {
                     ),
                   ),
                   const SizedBox(height: 28),
-                  const Text(
-                    'Preparing your lesson plan',
+                  Text(
+                    controller.loadingTitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
@@ -83,7 +84,7 @@ class _LoadingPageState extends State<LoadingPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Checking your profile, loading today\'s lesson, and setting up the next learning path.',
+                    controller.loadingMessage,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 15,
@@ -92,6 +93,21 @@ class _LoadingPageState extends State<LoadingPage> {
                     ),
                   ),
                   const SizedBox(height: 28),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      controller.loadingTitle,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
                   const SizedBox(
                     width: 36,
                     height: 36,

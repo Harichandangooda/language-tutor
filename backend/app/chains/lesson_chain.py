@@ -21,6 +21,6 @@ class LessonChain:
                 "user_id": user_id,
                 "cold_start": cold_start,
                 "learner_state": learner_state or {},
-                "lesson_blueprint": lesson_blueprint,
+                "lesson_blueprint": {**lesson_blueprint, "defer_assessment": True},
             }
         )

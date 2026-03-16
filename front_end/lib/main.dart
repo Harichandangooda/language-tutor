@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'pages/dashboard_page.dart';
 import 'pages/flashcards_page.dart';
 import 'pages/lesson_flow/assessment_page.dart';
+import 'pages/lesson_flow/learn_page.dart';
 import 'pages/lesson_flow/listening_page.dart';
+import 'pages/lesson_flow/practice_page.dart';
 import 'pages/lesson_flow/reading_page.dart';
 import 'pages/lesson_flow/speaking_page.dart';
 import 'pages/lesson_flow/writing_page.dart';
@@ -127,6 +129,8 @@ class LingoLearnApp extends StatelessWidget {
         '/loading': (context) => const LoadingPage(),
         '/dashboard': (context) => const DashboardPage(),
         '/flashcards': (context) => const FlashcardsPage(),
+        '/lesson/learn': (context) => const LearnPage(),
+        '/lesson/practice': (context) => const PracticePage(),
         '/lesson/reading': (context) => const ReadingPage(),
         '/lesson/listening': (context) => const ListeningPage(),
         '/lesson/writing': (context) => const WritingPage(),
