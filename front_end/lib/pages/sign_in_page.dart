@@ -17,6 +17,128 @@ class _SignInPageState extends State<SignInPage> {
     Navigator.pushReplacementNamed(context, '/dashboard');
   }
 
+  void _showForgotPasswordDialog() {
+    final TextEditingController usernameController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Forgot Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Enter your username to reset your password.'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: usernameController,
+                decoration: InputDecoration(
+                  hintText: 'Username',
+                  prefixIcon: const Icon(Icons.person_outline),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Password reset instructions sent!')),
+                );
+              },
+              child: const Text('Reset'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showCreateAccountDialog() {
+    final TextEditingController newUsernameController = TextEditingController();
+    final TextEditingController newPasswordController = TextEditingController();
+    bool obscureNew = true;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Create Account'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: newUsernameController,
+                    decoration: InputDecoration(
+                      hintText: 'New Username',
+                      prefixIcon: const Icon(Icons.person_add_outlined),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: newPasswordController,
+                    obscureText: obscureNew,
+                    decoration: InputDecoration(
+                      hintText: 'New Password',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscureNew ? Icons.visibility_off : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            obscureNew = !obscureNew;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    // Handle account creation logic
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Account created successfully!')),
+                    );
+                  },
+                  child: const Text('Sign Up'),
+                ),
+              ],
+            );
+          }
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -112,7 +234,7 @@ class _SignInPageState extends State<SignInPage> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: _showForgotPasswordDialog,
                   child: const Text('Forgot password?'),
                 ),
               ),
@@ -134,7 +256,7 @@ class _SignInPageState extends State<SignInPage> {
                     style: TextStyle(color: Colors.grey[700]),
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: _showCreateAccountDialog,
                     child: const Text(
                       'Create an account',
                       style: TextStyle(fontWeight: FontWeight.bold),

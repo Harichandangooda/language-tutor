@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'pages/sign_in_page.dart';
 import 'pages/dashboard_page.dart';
+import 'pages/flashcards_page.dart';
 import 'pages/lesson_flow/reading_page.dart';
 import 'pages/lesson_flow/listening_page.dart';
 import 'pages/lesson_flow/speaking_page.dart';
 import 'pages/lesson_flow/assessment_page.dart';
+import 'pages/lesson_flow/writing_page.dart';
+import 'pages/prev_lesson_flow/previous_lesson_menu_page.dart';
+import 'pages/prev_lesson_flow/prev_reading_page.dart';
+import 'pages/prev_lesson_flow/prev_listening_page.dart';
+import 'pages/prev_lesson_flow/prev_speaking_page.dart';
+import 'pages/prev_lesson_flow/prev_writing_page.dart';
 
 void main() {
   runApp(const LingoLearnApp());
@@ -83,10 +90,17 @@ class LingoLearnApp extends StatelessWidget {
       routes: {
         '/sign_in': (context) => const SignInPage(),
         '/dashboard': (context) => const DashboardPage(),
+        '/flashcards': (context) => const FlashcardsPage(),
         '/lesson/reading': (context) => const ReadingPage(),
         '/lesson/listening': (context) => const ListeningPage(),
         '/lesson/speaking': (context) => const SpeakingPage(),
+        '/lesson/writing': (context) => const WritingPage(),
         '/lesson/assessment': (context) => const AssessmentPage(),
+        '/prev_lesson': (context) => const PreviousLessonMenuPage(),
+        '/prev_lesson/reading': (context) => const PrevReadingPage(),
+        '/prev_lesson/listening': (context) => const PrevListeningPage(),
+        '/prev_lesson/speaking': (context) => const PrevSpeakingPage(),
+        '/prev_lesson/writing': (context) => const PrevWritingPage(),
       },
     );
   }

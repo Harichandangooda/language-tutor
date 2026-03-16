@@ -84,7 +84,9 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/flashcards');
+                    },
                     icon: const Icon(Icons.style, size: 18),
                     label: const Text('Flash Cards'),
                     style: OutlinedButton.styleFrom(
@@ -211,7 +213,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         subtitle: const Text('Completed • 40 XP'),
                         trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
                         onTap: () {
-                          // Allow re-visiting previous lessons or showing a dialogue
+                          Navigator.pushNamed(context, '/prev_lesson');
                         },
                       ),
                     );

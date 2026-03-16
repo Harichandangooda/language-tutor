@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class SpeakingPage extends StatelessWidget {
-  const SpeakingPage({super.key});
+class WritingPage extends StatelessWidget {
+  const WritingPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Speaking'),
+        title: const Text('Writing'),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -17,9 +17,7 @@ class SpeakingPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 20),
-              // Speaking/Recording Mock
               Container(
-                height: 250,
                 padding: const EdgeInsets.all(24.0),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -33,10 +31,10 @@ class SpeakingPage extends StatelessWidget {
                   ],
                 ),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Say the following phrase:',
+                      'Translate this sentence:',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey,
@@ -44,41 +42,21 @@ class SpeakingPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      '"Me llamo Ana. ¿Y tú?"',
-                      textAlign: TextAlign.center,
+                      '"I live in Madrid, Spain."',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.black87,
                       ),
                     ),
-                    const Spacer(),
-                    Container(
-                      width: 80,
-                      height: 80,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor,
-                          shape: BoxShape.circle,
+                    const SizedBox(height: 32),
+                    TextField(
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: 'Type your translation here...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
-                          Icons.mic,
-                          size: 32,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Tap to record',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black54,
                       ),
                     ),
                   ],
@@ -90,7 +68,7 @@ class SpeakingPage extends StatelessWidget {
                 children: [
                    OutlinedButton(
                     onPressed: () {
-                      Navigator.pop(context); // Go back to Listening
+                      Navigator.pop(context); // Go back to Speaking
                     },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -110,7 +88,7 @@ class SpeakingPage extends StatelessWidget {
                   ),
                    ElevatedButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, '/lesson/writing');
+                      Navigator.pushNamed(context, '/lesson/assessment');
                     },
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
