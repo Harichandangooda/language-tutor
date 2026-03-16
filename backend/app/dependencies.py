@@ -9,6 +9,7 @@ from backend.app.db.flashcards import FlashcardsRepository
 from backend.app.services.auth_service import AuthService
 from backend.app.services.lesson_service import LessonService
 from backend.app.services.assessment_service import AssessmentService
+from backend.app.services.app_data_service import AppDataService
 
 
 _users_repo = UsersRepository()
@@ -69,4 +70,22 @@ def get_assessment_service(
         learner_state_repo=learner_state_repo,
         attempts_repo=attempts_repo,
         flashcards_repo=flashcards_repo,
+    )
+
+
+def get_app_data_service(
+    users_repo: UsersRepository = Depends(get_users_repository),
+    learner_state_repo: LearnerStateRepository = Depends(get_learner_state_repository),
+    lessons_repo: LessonsRepository = Depends(get_lessons_repository),
+    attempts_repo: AttemptsRepository = Depends(get_attempts_repository),
+    flashcards_repo: FlashcardsRepository = Depends(get_flashcards_repository),
+    lesson_service: LessonService = Depends(get_lesson_service),
+) -> AppDataService:
+    return AppDataService(
+        users_repo=users_repo,
+        learner_state_repo=learner_state_repo,
+        lessons_repo=lessons_repo,
+        attempts_repo=attempts_repo,
+        flashcards_repo=flashcards_repo,
+        lesson_service=lesson_service,
     )

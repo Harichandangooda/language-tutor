@@ -1,152 +1,154 @@
 import 'package:flutter/material.dart';
 
+import '../../state/app_controller.dart';
+import '../../widgets/lesson_shell.dart';
+
 class ListeningPage extends StatelessWidget {
   const ListeningPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Listening'),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    final controller = AppScope.of(context);
+
+    return LessonShell(
+      title: 'Listening',
+      subtitle: 'Audio script and prompts now come from the selected backend lesson.',
+      stepLabel: 'Step 2 of 5',
+      progress: 0.4,
+      accentColor: const Color(0xFF0F766E),
+      previousRoute: '/lesson/reading',
+      nextRoute: '/lesson/writing',
+      body: FutureBuilder(
+        future: controller.fetchListening(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            if (snapshot.hasError) {
+              return _ErrorCard(message: '${snapshot.error}');
+            }
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final listening = snapshot.data!;
+          return Column(
             children: [
-              const SizedBox(height: 20),
-              // Audio Player Mock
-              Container(
-                height: 250,
-                padding: const EdgeInsets.all(24.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
+              LessonCard(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.play_arrow,
-                        size: 48,
-                        color: Colors.white,
+                    const Text(
+                      'Dialogue playback',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF112032),
                       ),
                     ),
-                    const SizedBox(height: 32),
-                    // Progress Bar Mock
-                    Stack(
-                      alignment: Alignment.centerLeft,
-                      children: [
-                        Container(
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                        Container(
-                          height: 8,
-                          width: 120, // Mock progress
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                        Positioned(
-                          left: 112,
-                          child: Container(
-                            width: 16,
-                            height: 16,
+                    const SizedBox(height: 18),
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0FDF9),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 90,
+                            height: 90,
                             decoration: const BoxDecoration(
-                              color: Colors.white,
+                              color: Color(0xFF0F766E),
                               shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(color: Colors.black12, blurRadius: 4)
-                              ]
+                            ),
+                            child: const Icon(
+                              Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 52,
                             ),
                           ),
+                          const SizedBox(height: 24),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: const LinearProgressIndicator(
+                              value: 0.38,
+                              minHeight: 10,
+                              backgroundColor: Color(0xFFD1FAE5),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF0F766E),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('00:48'),
+                              Text('02:05'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Transcript',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF112032),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      listening.audioScript,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        height: 1.7,
+                        color: Color(0xFF334155),
+                      ),
+                    ),
+                    if (listening.questions.isNotEmpty) ...[
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Questions',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF112032),
                         ),
+                      ),
+                      const SizedBox(height: 10),
+                      for (final question in listening.questions) ...[
+                        Text(
+                          question.question,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(question.answer),
+                        const SizedBox(height: 12),
                       ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text('1:20', style: TextStyle(color: Colors.grey)),
-                        Text('3:45', style: TextStyle(color: Colors.grey)),
-                      ],
-                    ),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(height: 48),
-              const Text(
-                'Listen to the dialogue and repeat the sentences.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-              ),
-              const Spacer(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                   OutlinedButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Go back to Reading
-                    },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                      side: BorderSide(color: Theme.of(context).primaryColor),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.arrow_back),
-                        SizedBox(width: 8),
-                        Text('Prev', style: TextStyle(color: Colors.black87)),
-                      ],
-                    ),
-                  ),
-                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/lesson/speaking');
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Text('Next'),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
             ],
-          ),
-        ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return LessonCard(
+      child: Text(
+        message,
+        style: const TextStyle(color: Color(0xFFB91C1C)),
       ),
     );
   }

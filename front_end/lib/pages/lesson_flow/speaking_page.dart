@@ -1,131 +1,149 @@
 import 'package:flutter/material.dart';
 
-class SpeakingPage extends StatelessWidget {
+import '../../state/app_controller.dart';
+import '../../widgets/lesson_shell.dart';
+
+class SpeakingPage extends StatefulWidget {
   const SpeakingPage({super.key});
 
   @override
+  State<SpeakingPage> createState() => _SpeakingPageState();
+}
+
+class _SpeakingPageState extends State<SpeakingPage> {
+  final TextEditingController _transcriptController = TextEditingController();
+
+  @override
+  void dispose() {
+    _transcriptController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Speaking'),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    final controller = AppScope.of(context);
+
+    return LessonShell(
+      title: 'Speaking',
+      subtitle: 'Speaking prompts and phrase targets come from the backend lesson content.',
+      stepLabel: 'Step 4 of 5',
+      progress: 0.8,
+      accentColor: const Color(0xFF7C3AED),
+      previousRoute: '/lesson/writing',
+      nextRoute: '/lesson/assessment',
+      body: FutureBuilder(
+        future: controller.fetchSpeaking(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            if (snapshot.hasError) {
+              return _ErrorCard(message: '${snapshot.error}');
+            }
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final speaking = snapshot.data!;
+          return Column(
             children: [
-              const SizedBox(height: 20),
-              // Speaking/Recording Mock
-              Container(
-                height: 250,
-                padding: const EdgeInsets.all(24.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
+              LessonCard(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Say the following phrase:',
+                      'Speaking prompt',
                       style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF112032),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      '"Me llamo Ana. ¿Y tú?"',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const Spacer(),
+                    const SizedBox(height: 18),
                     Container(
-                      width: 80,
-                      height: 80,
-                      padding: const EdgeInsets.all(8),
+                      width: 84,
+                      height: 84,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.2),
-                        shape: BoxShape.circle,
+                        color: const Color(0xFFF3E8FF),
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.mic,
-                          size: 32,
-                          color: Colors.white,
-                        ),
+                      child: const Icon(
+                        Icons.mic_rounded,
+                        size: 40,
+                        color: Color(0xFF7C3AED),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Tap to record',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black54,
+                    const SizedBox(height: 20),
+                    Text(
+                      speaking.prompt,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        height: 1.8,
+                        color: Color(0xFF334155),
+                      ),
+                    ),
+                    if (speaking.expectedPhrases.isNotEmpty) ...[
+                      const SizedBox(height: 18),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: speaking.expectedPhrases
+                            .map(
+                              (phrase) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF5F3FF),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  phrase,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF5B21B6),
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    TextField(
+                      controller: _transcriptController,
+                      onChanged: controller.updateSpeakingDraft,
+                      minLines: 3,
+                      maxLines: 5,
+                      decoration: InputDecoration(
+                        hintText: 'Type what you would say in the mic...',
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const Spacer(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                   OutlinedButton(
-                    onPressed: () {
-                      Navigator.pop(context); // Go back to Listening
-                    },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                      side: BorderSide(color: Theme.of(context).primaryColor),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.arrow_back),
-                        SizedBox(width: 8),
-                        Text('Prev', style: TextStyle(color: Colors.black87)),
-                      ],
-                    ),
-                  ),
-                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/lesson/writing');
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Text('Next'),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
             ],
-          ),
-        ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return LessonCard(
+      child: Text(
+        message,
+        style: const TextStyle(color: Color(0xFFB91C1C)),
       ),
     );
   }

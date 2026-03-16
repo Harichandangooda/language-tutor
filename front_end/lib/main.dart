@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
-import 'pages/sign_in_page.dart';
+
 import 'pages/dashboard_page.dart';
 import 'pages/flashcards_page.dart';
-import 'pages/lesson_flow/reading_page.dart';
-import 'pages/lesson_flow/listening_page.dart';
-import 'pages/lesson_flow/speaking_page.dart';
 import 'pages/lesson_flow/assessment_page.dart';
+import 'pages/lesson_flow/listening_page.dart';
+import 'pages/lesson_flow/reading_page.dart';
+import 'pages/lesson_flow/speaking_page.dart';
 import 'pages/lesson_flow/writing_page.dart';
-import 'pages/prev_lesson_flow/previous_lesson_menu_page.dart';
-import 'pages/prev_lesson_flow/prev_reading_page.dart';
+import 'pages/level_selector_page.dart';
+import 'pages/loading_page.dart';
 import 'pages/prev_lesson_flow/prev_listening_page.dart';
+import 'pages/prev_lesson_flow/prev_reading_page.dart';
 import 'pages/prev_lesson_flow/prev_speaking_page.dart';
 import 'pages/prev_lesson_flow/prev_writing_page.dart';
+import 'pages/prev_lesson_flow/previous_lesson_menu_page.dart';
+import 'pages/sign_in_page.dart';
+import 'state/app_controller.dart';
 
 void main() {
-  runApp(const LingoLearnApp());
+  runApp(
+    AppScope(
+      controller: AppController(),
+      child: const LingoLearnApp(),
+    ),
+  );
 }
 
 class LingoLearnApp extends StatelessWidget {
@@ -22,79 +31,106 @@ class LingoLearnApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const base = Color(0xFF112032);
+    const accent = Color(0xFFD97706);
+    const surface = Color(0xFFF6F4EE);
+
     return MaterialApp(
       title: 'LingoLearn',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFFFF9E6), // Light yellow background
-        primaryColor: const Color(0xFFFFB300), // Darker vibrant yellow
+        useMaterial3: true,
+        scaffoldBackgroundColor: surface,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFFFB300),
-          primary: const Color(0xFFFFB300),
-          secondary: const Color(0xFFF9A825), 
+          seedColor: accent,
+          primary: accent,
+          secondary: const Color(0xFF0F766E),
+          surface: surface,
+          brightness: Brightness.light,
         ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFFFB300),
-          foregroundColor: Colors.black87,
-          elevation: 0,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFFB300),
-            foregroundColor: Colors.black87,
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+        textTheme: const TextTheme(
+          headlineLarge: TextStyle(
+            fontSize: 34,
+            fontWeight: FontWeight.w800,
+            color: base,
+          ),
+          headlineMedium: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            color: base,
+          ),
+          titleLarge: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: base,
+          ),
+          bodyLarge: TextStyle(
+            fontSize: 16,
+            height: 1.55,
+            color: Color(0xFF334155),
+          ),
+          bodyMedium: TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            color: Color(0xFF526071),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 18,
+          ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFFFE57F)),
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFF9A825), width: 2),
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: accent, width: 1.5),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
-        cardTheme: CardThemeData(
-          color: Colors.white,
-          elevation: 3,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: accent,
+            foregroundColor: Colors.white,
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 22),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
           ),
-          margin: const EdgeInsets.all(8),
         ),
-        textTheme: const TextTheme(
-          displayLarge: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-          displayMedium: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-          bodyLarge: TextStyle(color: Colors.black87),
-          bodyMedium: TextStyle(color: Colors.black87),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: base,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+            side: const BorderSide(color: Color(0xFFD0D7E2)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+          ),
         ),
       ),
       initialRoute: '/sign_in',
       routes: {
         '/sign_in': (context) => const SignInPage(),
+        '/level_selector': (context) => const LevelSelectorPage(),
+        '/loading': (context) => const LoadingPage(),
         '/dashboard': (context) => const DashboardPage(),
         '/flashcards': (context) => const FlashcardsPage(),
         '/lesson/reading': (context) => const ReadingPage(),
         '/lesson/listening': (context) => const ListeningPage(),
-        '/lesson/speaking': (context) => const SpeakingPage(),
         '/lesson/writing': (context) => const WritingPage(),
+        '/lesson/speaking': (context) => const SpeakingPage(),
         '/lesson/assessment': (context) => const AssessmentPage(),
         '/prev_lesson': (context) => const PreviousLessonMenuPage(),
         '/prev_lesson/reading': (context) => const PrevReadingPage(),

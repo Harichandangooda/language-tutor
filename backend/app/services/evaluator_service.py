@@ -2,9 +2,54 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
+from backend.app.chains.evaluation_chain import EvaluationChain
+from backend.app.llm.model_factory import get_chat_model
+
 
 class EvaluatorService:
+    def __init__(self):
+        self._chain = None
+
     def evaluate(
+        self,
+        learner_state: Dict[str, Any],
+        lesson: Dict[str, Any],
+        submission: Dict[str, Any],
+        metrics: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        try:
+            return self._evaluate_with_llm(
+                learner_state=learner_state,
+                lesson=lesson,
+                submission=submission,
+                metrics=metrics,
+            )
+        except Exception:
+            return self._evaluate_with_fallback(
+                learner_state=learner_state,
+                lesson=lesson,
+                metrics=metrics,
+            )
+
+    def _evaluate_with_llm(
+        self,
+        learner_state: Dict[str, Any],
+        lesson: Dict[str, Any],
+        submission: Dict[str, Any],
+        metrics: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        if self._chain is None:
+            self._chain = EvaluationChain(get_chat_model())
+
+        evaluation = self._chain.evaluate(
+            learner_state=learner_state,
+            lesson=lesson,
+            submission=submission,
+            metrics=metrics,
+        )
+        return evaluation.model_dump()
+
+    def _evaluate_with_fallback(
         self,
         learner_state: Dict[str, Any],
         lesson: Dict[str, Any],
@@ -31,11 +76,14 @@ class EvaluatorService:
             weaknesses.extend(metrics["grammar_errors"])
             next_focus = "present tense verb conjugation"
 
+        if metrics["weak_words"]:
+            flashcard_words = metrics["weak_words"][:5]
+
         lesson_package = lesson.get("lesson_package", {})
         card = lesson_package.get("card", {})
         title = card.get("title", "").lower()
 
-        if "daily routine" in title:
+        if not flashcard_words and "daily routine" in title:
             flashcard_words = ["gehen", "essen", "lernen"]
 
         return {

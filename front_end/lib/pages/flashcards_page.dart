@@ -1,72 +1,71 @@
-import 'package:flutter/material.dart';
 import 'dart:math';
+
+import 'package:flutter/material.dart';
+
+import '../models/app_models.dart';
+import '../state/app_controller.dart';
 
 class FlashcardsPage extends StatelessWidget {
   const FlashcardsPage({super.key});
 
-  final List<Map<String, String>> flashcards = const [
-    {'word': 'Hola', 'context': 'Hello (used to greet someone)'},
-    {'word': 'Adiós', 'context': 'Goodbye (used when leaving)'},
-    {'word': 'Por favor', 'context': 'Please (polite request)'},
-    {'word': 'Gracias', 'context': 'Thank you (expressing gratitude)'},
-    {'word': 'Sí', 'context': 'Yes (agreement)'},
-    {'word': 'No', 'context': 'No (disagreement)'},
-    {'word': 'Buenos días', 'context': 'Good morning'},
-    {'word': 'Buenas noches', 'context': 'Good night'},
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final cards = AppScope.of(context).flashcards;
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F4EE),
       appBar: AppBar(
-        title: const Text('Flash Cards'),
-        centerTitle: true,
+        backgroundColor: const Color(0xFFF6F4EE),
+        title: const Text('Flashcards'),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16.0,
-              mainAxisSpacing: 16.0,
-              childAspectRatio: 0.8,
+      body: cards.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : GridView.builder(
+              padding: const EdgeInsets.all(20),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 14,
+                mainAxisSpacing: 14,
+                childAspectRatio: 0.78,
+              ),
+              itemCount: cards.length,
+              itemBuilder: (context, index) {
+                return _FlipCard(card: cards[index]);
+              },
             ),
-            itemCount: flashcards.length,
-            itemBuilder: (context, index) {
-              return FlipCard(
-                front: flashcards[index]['word']!,
-                back: flashcards[index]['context']!,
-              );
-            },
-          ),
-        ),
-      ),
     );
   }
 }
 
-class FlipCard extends StatefulWidget {
-  final String front;
-  final String back;
+class _FlipCard extends StatefulWidget {
+  const _FlipCard({required this.card});
 
-  const FlipCard({super.key, required this.front, required this.back});
+  final FlashcardModel card;
 
   @override
-  State<FlipCard> createState() => _FlipCardState();
+  State<_FlipCard> createState() => _FlipCardState();
 }
 
-class _FlipCardState extends State<FlipCard> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
+class _FlipCardState extends State<_FlipCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
   bool _isFront = true;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 300));
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   void _toggleCard() {
@@ -79,65 +78,110 @@ class _FlipCardState extends State<FlipCard> with SingleTickerProviderStateMixin
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: _toggleCard,
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
-          final isUnder = _animation.value > 0.5;
-          final value = _animation.value * pi;
-          
+          final showBack = _animation.value > 0.5;
+          final rotation = _animation.value * pi;
+
           return Transform(
-            transform: Matrix4.rotationY(value)..setEntry(3, 2, 0.001),
+            transform: Matrix4.rotationY(rotation)..setEntry(3, 2, 0.001),
             alignment: Alignment.center,
-            child: isUnder
+            child: showBack
                 ? Transform(
-                    transform: Matrix4.rotationY(pi),
                     alignment: Alignment.center,
-                    child: _buildCard(widget.back, true),
+                    transform: Matrix4.rotationY(pi),
+                    child: _CardFace(
+                      title: widget.card.meaning,
+                      subtitle: widget.card.example,
+                      dark: true,
+                    ),
                   )
-                : _buildCard(widget.front, false),
+                : _CardFace(
+                    title: widget.card.word,
+                    subtitle: widget.card.status,
+                    dark: false,
+                  ),
           );
         },
       ),
     );
   }
+}
 
-  Widget _buildCard(String text, bool isBack) {
+class _CardFace extends StatelessWidget {
+  const _CardFace({
+    required this.title,
+    required this.subtitle,
+    required this.dark,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: isBack ? Theme.of(context).primaryColor : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        gradient: dark
+            ? const LinearGradient(
+                colors: [Color(0xFF112032), Color(0xFF234D74)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
+        color: dark ? null : Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            color: Color(0x120E1A29),
+            blurRadius: 20,
+            offset: Offset(0, 12),
           ),
         ],
-        border: Border.all(
-          color: Theme.of(context).primaryColor.withOpacity(0.5),
-          width: 2,
-        ),
       ),
-      padding: const EdgeInsets.all(16.0),
-      child: Center(
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: isBack ? 16 : 24,
-            fontWeight: isBack ? FontWeight.w500 : FontWeight.bold,
-            color: Colors.black87,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: dark
+                  ? Colors.white.withValues(alpha: 0.14)
+                  : const Color(0xFFFFF1DA),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.auto_stories_rounded,
+              color: dark ? Colors.white : const Color(0xFFD97706),
+              size: 20,
+            ),
           ),
-        ),
+          const Spacer(),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: dark ? 18 : 24,
+              fontWeight: FontWeight.w800,
+              color: dark ? Colors.white : const Color(0xFF112032),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: dark
+                  ? Colors.white.withValues(alpha: 0.72)
+                  : const Color(0xFF64748B),
+            ),
+          ),
+        ],
       ),
     );
   }

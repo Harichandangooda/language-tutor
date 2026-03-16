@@ -10,6 +10,24 @@ class LessonStartRequest(StrictModel):
     user_id: str
 
 
+class LessonFeedItem(StrictModel):
+    lesson_id: str
+    slot: int
+    slug: str
+    day_label: str
+    title: str
+    objective: str
+    status: str
+    level: int | None = None
+    chapter: int | None = None
+    is_today: bool
+
+
+class LessonFeedResponse(StrictModel):
+    user_id: str
+    lessons: List[LessonFeedItem]
+
+
 class LessonCard(StrictModel):
     lesson_id: str
     title: str

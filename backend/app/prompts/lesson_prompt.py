@@ -20,14 +20,17 @@ lesson_prompt = ChatPromptTemplate.from_messages(
         (
             "human",
             (
-                "Generate today's lesson.\n\n"
+                "Generate the demo lesson.\n\n"
                 "user_id: {user_id}\n"
                 "cold_start: {cold_start}\n"
                 "learner_state: {learner_state}\n\n"
+                "lesson_blueprint: {lesson_blueprint}\n\n"
                 "Constraints:\n"
                 "- Target language: German\n"
                 "- Native language: English\n"
-                "- Default CEFR level for cold start: A1\n"
+                "- Default CEFR level for cold start: A1 unless lesson_blueprint says otherwise\n"
+                "- Use the lesson_blueprint as the source of truth for the topic, scenario, grammar focus, and vocabulary focus\n"
+                "- Keep the title, objective, and learning tasks aligned with the blueprint\n"
                 "- Include a card title and objective\n"
                 "- Include a simple image_prompt for the lesson card\n"
                 "- Reading should contain a short passage and 2 questions\n"
@@ -35,6 +38,7 @@ lesson_prompt = ChatPromptTemplate.from_messages(
                 "- Writing should contain one prompt and expected_keywords\n"
                 "- Speaking should contain one prompt and expected_phrases\n"
                 "- Assessment should contain 2 questions\n"
+                "- All learner-facing lesson content should be about German for beginner English speakers\n"
             ),
         ),
     ]

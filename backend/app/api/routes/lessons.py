@@ -1,14 +1,34 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from backend.app.schemas.lesson import LessonStartRequest
+from backend.app.schemas.lesson import LessonFeedResponse, LessonStartRequest
 from backend.app.dependencies import get_lesson_service
 from backend.app.services.lesson_service import (
     LessonService,
+    LessonGenerationError,
     LessonNotFoundError,
     InvalidLessonRequestError,
 )
 
 router = APIRouter(prefix="/lessons", tags=["lessons"])
+
+
+@router.get("", response_model=LessonFeedResponse)
+def list_lessons(
+    user_id: str = Query(...),
+    service: LessonService = Depends(get_lesson_service),
+):
+    try:
+        return service.list_lessons(user_id)
+    except InvalidLessonRequestError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except LessonGenerationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
 
 
 @router.post("/start")
@@ -21,6 +41,11 @@ def start_lesson(
     except InvalidLessonRequestError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except LessonGenerationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(exc),
         ) from exc
 

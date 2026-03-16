@@ -41,4 +41,9 @@ class AssessmentResult(BaseModel):
     weaknesses: List[str]
     new_flashcards: List[str]
     next_focus: str
+    chapter_complete: bool = False
+    chapter_average: float | None = None
+    level_outcome: str | None = None
+    current_level: int | None = None
+    current_level_name: str | None = None
     metrics: Dict[str, Any]

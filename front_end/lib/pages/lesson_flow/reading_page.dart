@@ -1,82 +1,98 @@
 import 'package:flutter/material.dart';
 
+import '../../models/app_models.dart';
+import '../../state/app_controller.dart';
+import '../../widgets/lesson_shell.dart';
+
 class ReadingPage extends StatelessWidget {
   const ReadingPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reading'),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    final controller = AppScope.of(context);
+    LessonFeedItemModel? lesson;
+    for (final item in controller.lessons) {
+      if (item.lessonId == controller.activeLessonId) {
+        lesson = item;
+        break;
+      }
+    }
+
+    return LessonShell(
+      title: 'Reading',
+      subtitle: lesson?.objective ?? 'Reading content from the selected backend lesson.',
+      stepLabel: 'Step 1 of 5',
+      progress: 0.2,
+      accentColor: const Color(0xFFD97706),
+      nextRoute: '/lesson/listening',
+      body: FutureBuilder(
+        future: controller.fetchReading(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            if (snapshot.hasError) {
+              return _ErrorCard(message: '${snapshot.error}');
+            }
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final reading = snapshot.data!;
+          return Column(
             children: [
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(24.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Let\'s Read',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Hello! My name is Ana. I live in Madrid, Spain. '
-                      'I have a small dog named Max. Every morning, we go for a walk in the park. '
-                      'I like to read books and drink coffee in the afternoon.',
-                      style: TextStyle(
-                        fontSize: 18,
-                        height: 1.6,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
+              MarkdownSection(
+                eyebrow: lesson?.dayLabel ?? 'Lesson',
+                title: lesson?.title ?? 'Reading',
+                body: reading.passage,
               ),
-              const Spacer(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/lesson/listening');
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Text('Next'),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward),
+              if (reading.questions.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                LessonCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Comprehension checks',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF112032),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      for (final question in reading.questions) ...[
+                        Text(
+                          question.question,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF112032),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(question.answer),
+                        const SizedBox(height: 14),
                       ],
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ],
-          ),
-        ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return LessonCard(
+      child: Text(
+        message,
+        style: const TextStyle(color: Color(0xFFB91C1C)),
       ),
     );
   }

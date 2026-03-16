@@ -39,3 +39,10 @@ class AttemptsRepository(InMemoryRepository[Dict[str, Any]]):
     def get_latest_by_lesson(self, lesson_id: str) -> Optional[Dict[str, Any]]:
         attempts = self.list_by_lesson(lesson_id)
         return attempts[0] if attempts else None
+
+    def delete_by_user(self, user_id: str) -> int:
+        deleted = 0
+        for attempt in self.list_by_user(user_id):
+            if self.delete(attempt["attempt_id"]):
+                deleted += 1
+        return deleted

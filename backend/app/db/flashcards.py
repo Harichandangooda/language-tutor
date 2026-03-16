@@ -29,3 +29,10 @@ class FlashcardsRepository(InMemoryRepository[Dict[str, Any]]):
     def list_by_user(self, user_id: str) -> List[Dict[str, Any]]:
         cards = [item for item in self.list_all() if item["user_id"] == user_id]
         return sorted(cards, key=lambda item: item["created_at"], reverse=True)
+
+    def delete_by_user(self, user_id: str) -> int:
+        deleted = 0
+        for card in self.list_by_user(user_id):
+            if self.delete(card["flashcard_id"]):
+                deleted += 1
+        return deleted

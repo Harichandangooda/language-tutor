@@ -1,17 +1,16 @@
-import os
+from backend.app.core.settings import get_settings
 
 
 def get_chat_model():
-    api_key = os.getenv("OPENAI_API_KEY")
-
-    provider = os.getenv("LLM_PROVIDER", "openai").lower()
+    settings = get_settings()
+    provider = settings.llm_provider
 
     if provider == "openai":
         from langchain_openai import ChatOpenAI
 
-        model_name = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
         return ChatOpenAI(
-            model=model_name,
+            api_key=settings.openai_api_key,
+            model=settings.openai_model,
             temperature=0.3,
         )
 

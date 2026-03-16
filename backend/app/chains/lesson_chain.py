@@ -14,11 +14,13 @@ class LessonChain:
         user_id: str,
         learner_state: Dict[str, Any] | None,
         cold_start: bool,
+        lesson_blueprint: Dict[str, Any],
     ) -> LessonPackage:
         return self.chain.invoke(
             {
                 "user_id": user_id,
                 "cold_start": cold_start,
                 "learner_state": learner_state or {},
+                "lesson_blueprint": lesson_blueprint,
             }
         )

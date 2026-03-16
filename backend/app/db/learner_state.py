@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from backend.app.db.base import InMemoryRepository
+from backend.app.services.level_progression import build_progression_state, level_cefr
 
 
 def default_learner_state(user_id: str, native_language: str = 'English', target_language: str = 'German') -> Dict[str, Any]:
@@ -13,7 +14,7 @@ def default_learner_state(user_id: str, native_language: str = 'English', target
         'language_profile': {
             'native_language': native_language,
             'target_language': target_language,
-            'current_level': 'A1',
+            'current_level': level_cefr(1),
         },
         'skill_levels': {
             'reading': 0.5,
@@ -45,8 +46,9 @@ def default_learner_state(user_id: str, native_language: str = 'English', target
         'next_lesson_focus': {
             'topic': 'introductory greetings',
             'grammar': 'basic present tense',
-            'difficulty': 'A1',
+            'difficulty': level_cefr(1),
         },
+        'progression': build_progression_state(1),
         'updated_at': datetime.now(timezone.utc).isoformat(),
     }
 

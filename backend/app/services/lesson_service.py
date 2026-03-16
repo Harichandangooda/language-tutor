@@ -1,6 +1,5 @@
-import uuid
-
 from backend.app.services.lesson_generator import LessonGenerator
+from backend.app.services.level_progression import build_demo_lessons, build_progression_state
 
 
 class LessonNotFoundError(Exception):
@@ -11,38 +10,37 @@ class InvalidLessonRequestError(Exception):
     pass
 
 
+class LessonGenerationError(Exception):
+    pass
+
+
 class LessonService:
     def __init__(self, learner_state_repo, lessons_repo):
         self.learner_state_repo = learner_state_repo
         self.lessons_repo = lessons_repo
         self.lesson_generator = LessonGenerator()
 
+    def list_lessons(self, user_id: str):
+        if not user_id or not user_id.strip():
+            raise InvalidLessonRequestError("user_id is required to list lessons")
+
+        lessons = self._ensure_demo_lessons(user_id)
+        return {
+            "user_id": user_id,
+            "lessons": [self._to_feed_item(lesson) for lesson in lessons],
+        }
+
     def start_lesson(self, user_id: str):
         if not user_id or not user_id.strip():
             raise InvalidLessonRequestError("user_id is required to start a lesson")
 
-        learner_state = self.learner_state_repo.get_or_create(user_id)
-
-        lesson_package = self.lesson_generator.generate(
-            user_id=user_id,
-            learner_state=learner_state,
-        )
-
-        lesson_id = f"lesson_{uuid.uuid4().hex[:8]}"
-        lesson_package.card.lesson_id = lesson_id
-
-        lesson_package_dict = lesson_package.model_dump()
-
-        self.lessons_repo.create_lesson(
-            lesson_id=lesson_id,
-            user_id=user_id,
-            lesson_package=lesson_package_dict,
-        )
+        lessons = self._ensure_demo_lessons(user_id)
+        lesson = next((item for item in lessons if item.get("slot") == 1), lessons[0])
 
         return {
-            "lesson_id": lesson_id,
-            "card": lesson_package_dict["card"],
-            "status": "ready",
+            "lesson_id": lesson["lesson_id"],
+            "card": lesson["lesson_package"]["card"],
+            "status": lesson["status"],
         }
 
     def get_card(self, lesson_id: str):
@@ -80,3 +78,64 @@ class LessonService:
         if not assessment:
             raise LessonNotFoundError(f"Assessment content not found for lesson_id='{lesson_id}'")
         return assessment
+
+    def _ensure_demo_lessons(self, user_id: str):
+        learner_state = self.learner_state_repo.get_or_create(user_id)
+        progression = learner_state.get("progression", build_progression_state(1))
+        current_level = int(progression.get("current_level", 1))
+        current_chapter = int(progression.get("current_chapter", 5))
+        blueprints = build_demo_lessons(current_level, current_chapter)
+
+        for blueprint in blueprints:
+            existing = self.lessons_repo.get_by_user_and_slot(user_id, int(blueprint["slot"]))
+            if (
+                existing is not None
+                and existing.get("level") == current_level
+                and existing.get("chapter") == current_chapter
+            ):
+                continue
+            if existing is not None:
+                self.lessons_repo.delete(existing["lesson_id"])
+
+            lesson_id = f"lesson_demo_{user_id}_l{current_level}_c{current_chapter}_{blueprint['slot']}"
+            try:
+                lesson_package = self.lesson_generator.generate(
+                    user_id=user_id,
+                    learner_state=learner_state,
+                    lesson_blueprint=blueprint,
+                )
+            except Exception as exc:
+                raise LessonGenerationError(
+                    f"Failed to generate demo lesson {blueprint['slot']} ({blueprint['slug']})"
+                ) from exc
+            lesson_package.card.lesson_id = lesson_id
+            lesson_package_dict = lesson_package.model_dump()
+
+            self.lessons_repo.create_lesson(
+                lesson_id=lesson_id,
+                user_id=user_id,
+                lesson_package=lesson_package_dict,
+                slot=int(blueprint["slot"]),
+                slug=str(blueprint["slug"]),
+                day_label=str(blueprint["day_label"]),
+                level=current_level,
+                chapter=current_chapter,
+            )
+
+        return self.lessons_repo.list_by_user(user_id)
+
+    def _to_feed_item(self, lesson: dict):
+        card = lesson["lesson_package"]["card"]
+        slot = lesson.get("slot", 999)
+        return {
+            "lesson_id": lesson["lesson_id"],
+            "slot": slot,
+            "slug": lesson.get("slug") or f"lesson-{slot}",
+            "day_label": lesson.get("day_label") or f"Lesson {slot}",
+            "title": card["title"],
+            "objective": card["objective"],
+            "status": lesson["status"],
+            "level": lesson.get("level"),
+            "chapter": lesson.get("chapter"),
+            "is_today": slot == 1,
+        }

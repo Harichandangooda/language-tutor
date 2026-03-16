@@ -5,6 +5,7 @@ from typing import Any, Dict
 
 from backend.app.services.metrics_processor import MetricsProcessor
 from backend.app.services.evaluator_service import EvaluatorService
+from backend.app.services.level_progression import build_progression_state, level_name
 
 
 class LessonNotFoundError(Exception):
@@ -57,6 +58,7 @@ class AssessmentService:
         evaluation = self.evaluator_service.evaluate(
             learner_state=learner_state,
             lesson=lesson,
+            submission=submission_dict,
             metrics=metrics,
         )
 
@@ -105,12 +107,23 @@ class AssessmentService:
         self.learner_state_repo.patch(user_id, learner_patch)
         self.lessons_repo.mark_completed(lesson_id)
 
+        chapter_result = self._handle_chapter_completion(
+            user_id=user_id,
+            lesson=lesson,
+            learner_state=self.learner_state_repo.get_or_create(user_id),
+        )
+
         return {
             "lesson_completed": True,
             "strengths": evaluation["strengths"],
             "weaknesses": evaluation["weaknesses"],
             "new_flashcards": evaluation["flashcard_words"],
             "next_focus": evaluation["next_focus"],
+            "chapter_complete": chapter_result["chapter_complete"],
+            "chapter_average": chapter_result["chapter_average"],
+            "level_outcome": chapter_result["level_outcome"],
+            "current_level": chapter_result["current_level"],
+            "current_level_name": chapter_result["current_level_name"],
             "metrics": metrics,
         }
 
@@ -137,3 +150,106 @@ class AssessmentService:
                 }
             )
         return cards
+
+    def _handle_chapter_completion(
+        self,
+        user_id: str,
+        lesson: Dict[str, Any],
+        learner_state: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        progression = learner_state.get("progression", build_progression_state(1))
+        current_level = int(progression.get("current_level", 1))
+        current_chapter = int(progression.get("current_chapter", 5))
+
+        chapter_lessons = [
+            item
+            for item in self.lessons_repo.list_by_user(user_id)
+            if item.get("level") == current_level and item.get("chapter") == current_chapter
+        ]
+        if not chapter_lessons or any(item.get("status") != "completed" for item in chapter_lessons):
+            return {
+                "chapter_complete": False,
+                "chapter_average": None,
+                "level_outcome": None,
+                "current_level": current_level,
+                "current_level_name": level_name(current_level),
+            }
+
+        attempts = []
+        for item in chapter_lessons:
+            attempt = self.attempts_repo.get_latest_by_lesson(item["lesson_id"])
+            if attempt is not None:
+                attempts.append(attempt)
+
+        if not attempts:
+            return {
+                "chapter_complete": False,
+                "chapter_average": None,
+                "level_outcome": None,
+                "current_level": current_level,
+                "current_level_name": level_name(current_level),
+            }
+
+        chapter_average = round(
+            sum(float(attempt["metrics"].get("assessment_score", 0.0)) * 100 for attempt in attempts) / len(attempts),
+            1,
+        )
+        threshold = float(progression.get("promotion_threshold", 60.0))
+        outcome = "retry"
+        next_level = current_level
+
+        if chapter_average >= threshold:
+            if current_level >= 5:
+                outcome = "mastered"
+            else:
+                outcome = "promoted"
+                next_level = current_level + 1
+
+        chapter_history = list(progression.get("chapter_history", []))
+        chapter_history.append(
+            {
+                "chapter": current_chapter,
+                "level": current_level,
+                "level_name": level_name(current_level),
+                "score": chapter_average,
+                "status": "completed",
+                "result": outcome,
+            }
+        )
+
+        if outcome == "promoted":
+            new_progression = build_progression_state(next_level)
+            new_progression["last_chapter_average"] = chapter_average
+            new_progression["last_result"] = outcome
+        elif outcome == "mastered":
+            new_progression = dict(progression)
+            new_progression["last_chapter_average"] = chapter_average
+            new_progression["last_result"] = outcome
+            new_progression["chapter_history"] = chapter_history
+        else:
+            new_progression = dict(progression)
+            new_progression["last_chapter_average"] = chapter_average
+            new_progression["last_result"] = outcome
+            new_progression["chapter_history"] = chapter_history
+
+        self.learner_state_repo.patch(
+            user_id,
+            {
+                "language_profile": {
+                    "current_level": build_progression_state(next_level)["current_level_cefr"]
+                    if outcome == "promoted"
+                    else learner_state.get("language_profile", {}).get("current_level", "A1"),
+                },
+                "progression": new_progression,
+            },
+        )
+
+        self.lessons_repo.delete_by_user(user_id)
+
+        return {
+            "chapter_complete": True,
+            "chapter_average": chapter_average,
+            "level_outcome": outcome,
+            "current_level": new_progression.get("current_level", current_level),
+            "current_level_name": new_progression.get("current_level_name", level_name(current_level)),
+        }
