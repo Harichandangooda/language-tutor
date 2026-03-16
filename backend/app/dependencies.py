@@ -10,6 +10,7 @@ from backend.app.services.auth_service import AuthService
 from backend.app.services.lesson_service import LessonService
 from backend.app.services.assessment_service import AssessmentService
 from backend.app.services.app_data_service import AppDataService
+from backend.app.services.doubt_chat_service import DoubtChatService
 
 
 _users_repo = UsersRepository()
@@ -88,4 +89,14 @@ def get_app_data_service(
         attempts_repo=attempts_repo,
         flashcards_repo=flashcards_repo,
         lesson_service=lesson_service,
+    )
+
+
+def get_doubt_chat_service(
+    users_repo: UsersRepository = Depends(get_users_repository),
+    learner_state_repo: LearnerStateRepository = Depends(get_learner_state_repository),
+) -> DoubtChatService:
+    return DoubtChatService(
+        users_repo=users_repo,
+        learner_state_repo=learner_state_repo,
     )

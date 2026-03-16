@@ -169,6 +169,14 @@ class AppController extends ChangeNotifier {
     await bootstrap();
   }
 
+  Future<String> askDoubt(String message) async {
+    final userId = session?.userId;
+    if (userId == null) {
+      throw Exception('No logged in user');
+    }
+    return _apiClient.askDoubt(userId: userId, message: message);
+  }
+
   Future<ReadingContentModel> fetchReading() async {
     return _apiClient.fetchReading(_requireActiveLessonId());
   }

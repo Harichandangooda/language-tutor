@@ -37,7 +37,7 @@ class _PracticePageState extends State<PracticePage> {
       previousRoute: '/lesson/learn',
       nextRoute: '/lesson/reading',
       nextLabel: 'Go to reading',
-      nextEnabled: _submitted && _allCorrect(_correctCount, _controllers.length),
+      nextEnabled: _submitted,
       body: FutureBuilder(
         future: controller.fetchPractice(),
         builder: (context, snapshot) {
@@ -100,7 +100,7 @@ class _PracticePageState extends State<PracticePage> {
                         'You got $_correctCount of ${practice.items.length} correct.',
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
-                          color: _allCorrect(_correctCount, practice.items.length)
+                          color: _correctCount == practice.items.length && practice.items.isNotEmpty
                               ? const Color(0xFF166534)
                               : const Color(0xFF9A3412),
                         ),
@@ -149,8 +149,6 @@ class _PracticePageState extends State<PracticePage> {
     return normalizedValue.isNotEmpty &&
         (normalizedValue == normalizedExpected || normalizedValue.contains(normalizedExpected));
   }
-
-  bool _allCorrect(int correctCount, int total) => total > 0 && correctCount == total;
 
   void _retry() {
     for (final controller in _controllers) {

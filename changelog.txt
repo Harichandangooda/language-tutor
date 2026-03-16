@@ -1,0 +1,365 @@
+LingoLearn Hackathon Changelog
+Session summary of changes implemented
+
+1. Product direction changes
+
+- Clarified that the frontend is Flutter and the backend is Python FastAPI.
+- Reframed the app around one core differentiator versus Duolingo:
+  adaptive starting level instead of forcing every learner to begin at the same beginner stage.
+- Shifted the demo target language flow to German.
+- Moved from a generic/static lesson demo to a level-aware, chapter-aware adaptive learning demo.
+
+2. Repository and tooling cleanup
+
+- Removed repo-side Puro configuration so the project could run with standard Flutter instead of a repo-managed Flutter version.
+- Confirmed that Flutter should be installed globally rather than introducing extra repo files.
+- Helped with Flutter PATH setup and local run instructions.
+
+3. Backend architecture and configuration updates
+
+- Hardened backend configuration handling around `.env`.
+- Added validation for AI model settings on startup.
+- Ensured the backend requires valid Amazon Bedrock / Nova configuration instead of silently running with placeholder config.
+- Updated model configuration handling so lesson generation uses validated settings consistently.
+- Verified live Amazon Nova-backed generation after the Bedrock configuration was corrected.
+
+4. Demo authentication updates
+
+- Kept demo login flow using the seeded in-memory account:
+  `hari@example.com / demo123`
+- Expanded the login response so frontend state includes more useful learner information.
+- Used demo login as the fixed entry point for the hackathon flow.
+
+5. Lesson generation redesign
+
+- Replaced the earlier simple fixed lesson setup with a more controlled demo lesson generation flow.
+- Initially changed the backend to support exactly 3 demo lessons.
+- Then redesigned lesson generation again to depend on learner level and chapter.
+- Final implemented behavior:
+  - user selects a German level after login
+  - backend resets the demo learner state
+  - learner starts in chapter 5 of the selected level
+  - backend generates 3 fresh lessons for that chapter
+- Lessons are generated through Amazon Nova and include:
+  - Reading
+  - Listening
+  - Writing
+  - Speaking
+  - Assessment
+
+6. Level-based adaptive demo flow
+
+- Added a 5-level German self-rating system.
+- Named levels were finalized as:
+  - Level 1: Newbie
+  - Level 2: Beginner
+  - Level 3: Intermediate
+  - Level 4: Advanced
+  - Level 5: Expert
+- Added the rule that the level must be asked every time after login for the demo account.
+- Implemented backend placement logic so selected level becomes the active learner state.
+
+7. Chapter and progression model
+
+- Introduced a chapter progression model for the demo.
+- Set the learner to start at chapter 5 of the selected level.
+- Seeded chapters 1-4 as already completed to make the demo feel mid-journey instead of brand new.
+- Added backend learner progression state to track:
+  - current level
+  - current chapter
+  - seeded history
+  - outcome of the active chapter
+- Added result states for:
+  - promoted
+  - retry
+  - mastered
+
+8. Scoring and demo-seeded progress changes
+
+- Corrected an issue where chapter 5 scores were showing before the user had completed any lessons.
+- Changed chapter 5 lessons so they start as pending with no prefilled scores.
+- Left chapters 1-4 seeded with completed scores for the demo.
+- Updated the seeded chapter scores to:
+  - 82
+  - 84
+  - 86
+  - 88
+- This made the visible seeded average:
+  - 85%
+- Ensured the current visible average comes from seeded chapter history, not fake current-lesson scores.
+
+9. Promotion/mastery logic implemented
+
+- Added backend logic to decide the outcome after the chapter 5 lesson set is completed.
+- Implemented:
+  - promotion to next level
+  - retry at same level
+  - mastered if the learner passes while already at level 5
+- Important implementation note:
+  the final code currently uses a 60% threshold for chapter-5 promotion/mastery decisions.
+- Earlier threshold discussions happened during the session, but the implemented backend logic is currently 60%.
+
+10. Assessment and evaluation improvements
+
+- Improved assessment scoring so it is more tied to lesson content instead of being purely placeholder-based.
+- Added a Nova-backed evaluation path for assessment feedback.
+- Added a fallback path if Nova evaluation fails.
+- Improved the backend assessment route contract with clearer response handling.
+
+11. New backend endpoints and app data support
+
+- Added stable backend endpoints to support the frontend app experience.
+- Added or updated endpoints for:
+  - login
+  - lesson feed/listing
+  - lesson section retrieval
+  - assessment submission
+  - progress
+  - profile
+  - flashcards
+  - placement
+- Added backend service and schema support for app-wide views like progress, profile, and flashcards.
+
+12. Frontend integration changes
+
+- Added a real API client in Flutter for talking to the FastAPI backend.
+- Added shared frontend app state/controller logic.
+- Added frontend models for backend-driven data.
+- Replaced local placeholder content with backend-driven lesson, progress, profile, and flashcard data.
+- Wired assessment submission back into the API and refreshed app data after completion.
+- Added the `http` dependency to Flutter.
+
+13. Frontend UX and flow changes
+
+- Moved the app to a more complete mobile-style flow:
+  - login
+  - level selection
+  - loading
+  - dashboard
+  - lesson flow
+  - result dialog
+- Added a dedicated level selector page.
+- Changed the level selector CTA text from
+  `Continue to chapter 5`
+  to
+  `Let's start!`
+- Updated dashboard behavior so lessons, progress, profile, and flashcards reflect backend state.
+- Updated lesson flow screens to load live backend content.
+- Added result dialogs for chapter outcomes:
+  - promoted
+  - retry
+  - mastered
+
+14. Local run and browser demo support
+
+- Enabled backend CORS handling for local Flutter web development.
+- Fixed the earlier `ClientException: Failed to fetch` issue caused by local frontend/backend integration problems.
+- Restarted and reran the backend and frontend multiple times during debugging.
+- Confirmed local hosting setup:
+  - backend on `http://127.0.0.1:8000`
+  - frontend on Flutter web in Chrome
+
+15. Bugs fixed during live testing
+
+- Fixed lesson generation failure caused by stale blueprint access in the backend.
+- Fixed progress endpoint errors after the progression refactor.
+- Fixed prefilled score issues in chapter 5.
+- Fixed local fetch/CORS issues impacting login and lesson loading.
+- Fixed frontend CTA wording on the level selector.
+
+16. Documentation updates
+
+- Rewrote `README.md` into a GitHub-ready project overview.
+- README now includes:
+  - product description
+  - adaptive German demo concept
+  - named level system
+  - chapter 5 seeded-demo flow
+  - tech stack
+  - backend/frontend structure
+  - environment setup
+  - run instructions
+  - demo credentials
+  - API summary
+  - current limitations
+
+17. Current demo state at end of session
+
+- Frontend: Flutter
+- Backend: FastAPI
+- Language focus: German
+- Demo login: `hari@example.com / demo123`
+- Level selection required after every login
+- Levels:
+  - 1 Newbie
+  - 2 Beginner
+  - 3 Intermediate
+  - 4 Advanced
+  - 5 Expert
+- User starts in chapter 5 of selected level
+- Chapters 1-4 are seeded completed history
+- Seeded chapter average is 85%
+- Chapter 5 contains 3 fresh generated lessons
+- Chapter 5 lesson scores are pending until completion
+- Outcome after completion:
+  - promoted
+  - retry
+  - mastered
+- Data is currently in-memory and optimized for hackathon demo use
+
+18. Notes for future work
+
+- Confirm whether the promotion threshold should remain 60% or be changed to 80%, since both values were discussed during planning but 60% is what is currently implemented.
+- Persist learner data beyond in-memory demo state.
+- Expand beyond the current hackathon-only German demo flow.
+- Deploy the backend/frontend publicly if needed beyond local demo usage.
+
+19. Session update: teach-first lesson expansion, retry flow, Nova migration, and fallback generation
+
+- Expanded the lesson experience from assessment-first into a fuller teach-first flow.
+- Added dedicated lesson phases before the final scored exam:
+  - Learn
+  - Practice
+  - Reading practice
+  - Listening practice
+  - Writing practice
+  - Speaking practice
+- Kept the final assessment as a separate scored stage rather than mixing practice with grading.
+
+20. Translation and learning support upgrades
+
+- Added English translation support across the learner-facing lesson flow.
+- Added translated mini-dialogue content in the Learn phase.
+- Added translation support for:
+  - reading passages
+  - reading questions
+  - listening transcript/script content
+  - listening questions
+  - writing prompts
+  - speaking prompts
+  - assessment prompts
+- Added word-gloss support so German phrases can be explored word by word in English.
+- Added full-phrase English translation support alongside the word glosses.
+
+21. Practice flow redesign
+
+- Converted the pre-assessment steps into unscored practice.
+- Added submit and retry behavior for practice screens.
+- Updated practice gating so the learner can move forward after submitting once, even if they do not get everything correct.
+- Kept retry capability without affecting official lesson scores.
+
+22. Final assessment redesign
+
+- Replaced the older single-question assessment with a richer scored bundle.
+- Final assessment now includes:
+  - reading assessment questions
+  - listening assessment questions
+  - writing assessment prompt
+  - speaking assessment prompt
+  - 5 MCQ questions
+- Kept assessment questions aligned with the same lesson theme, vocabulary, and grammar focus as the earlier practice content.
+
+23. Detailed feedback and progress logging
+
+- Expanded lesson completion feedback beyond a simple result dialog.
+- Added longer-form post-assessment feedback including:
+  - long feedback summary
+  - what went well
+  - what to improve
+- Added correct-answer review support after assessment.
+- Added lesson feedback into persisted attempt/progress views so progress contains stronger coaching context per lesson.
+- Used this logged weakness data to support later retry/reset targeting.
+
+24. Retry and dashboard behavior changes
+
+- Updated dashboard lesson behavior so completed lessons can be retried from home.
+- Added completed-lesson retry flow that reuses the lesson without overwriting the official score.
+- Kept completed lessons separate from the active lesson flow.
+- Improved dashboard card presentation and made lesson cards more colorful and visually richer.
+- Simplified some earlier “previous lessons” behavior and aligned the feed more closely with active vs completed lesson status.
+
+25. Progression and scoring model updates
+
+- Changed progression logic so the important promotion/reset/relegation decision is based on the full level average across 5 chapters rather than only the active chapter.
+- Implemented level outcome bands:
+  - `>= 80`: promote
+  - `50-79.9`: reset same level with fresh retry content
+  - `< 50`: relegate to previous level when possible
+  - top level with passing score: mastered
+- Preserved official scores so retries do not let a learner inflate completed scores.
+- Added `level_average` to backend result payloads and frontend result handling.
+
+26. Weakness-aware reset generation
+
+- Added backend logic to build a reset focus profile from prior scored attempts.
+- Reset generation now uses persisted weakness information such as:
+  - weak topics
+  - weak words
+  - weakest skills
+- Used this profile to bias regenerated retry lesson packs so reset content focuses more on real learner weaknesses instead of being fully generic.
+
+27. Loading and lesson generation performance improvements
+
+- Improved the loading flow for lesson preparation.
+- Added staged loading/progress messaging such as:
+  - checking profile
+  - generating lesson cards
+  - preparing practice
+  - building assessment
+- Split generation so lesson core content and assessment generation can happen in stages instead of one monolithic request.
+- Improved caching/preload behavior to reduce repeated “preparing lesson plan” delays.
+
+28. Doubt chatbot added
+
+- Added a simple Nova-backed doubt-clearing chatbot for German-language questions.
+- Added backend endpoint:
+  - `POST /app/doubt-chat`
+- Added a Flutter doubt chat page and wired dashboard access to it.
+- Added fallback behavior when the model cannot answer so the app still responds safely.
+
+29. Nova / Bedrock migration work
+
+- Added backend provider support for Amazon Bedrock / Nova through `.env`.
+- Added support for Bedrock-related environment variables and provider switching.
+- Clarified Bedrock model ID setup and tested Nova connectivity through the existing backend.
+- Switched the backend to a Nova-compatible shared model factory.
+- Integrated Nova into lesson generation, assessment generation, and doubt-chat/evaluation paths where applicable.
+
+30. Nova generation reliability debugging
+
+- Investigated multiple live Bedrock/Nova failure modes during lesson generation, including:
+  - incorrect model ID formats
+  - inference profile / throughput-related invocation issues
+  - malformed JSON returned by the model
+  - schema-validation and structured-output failures
+- Reworked lesson/assessment generation away from assuming perfect structured output.
+- Added raw-response parsing utilities and stricter JSON error handling for model responses.
+- Added repair-pass logic for malformed JSON responses from Nova.
+- Tested Bedrock native structured-output support through the LangChain Bedrock Converse integration.
+
+31. Safe fallback lesson generation for demo reliability
+
+- Added a deterministic local lesson-template generator so app placement no longer hard-fails when Nova lesson generation fails.
+- Added local fallback generation for both:
+  - lesson core package
+  - assessment package
+- Kept the same backend lesson schema so the frontend and existing features continue to work without UI changes.
+- Final generation behavior now follows:
+  - try Nova first
+  - if Nova fails, build the lesson locally from the existing lesson blueprint
+- This removed the need for any secondary provider key in order for the demo lesson flow to work.
+
+32. Backend stability and live debugging fixes during this session
+
+- Fixed a frontend compile issue caused by a stale `_allCorrect` reference in the practice page.
+- Repeatedly restarted and revalidated the backend during Flutter web testing.
+- Kept backend import checks passing after the Nova integration and fallback changes.
+
+33. Current state after this session
+
+- The app now supports a much fuller teach-first adaptive learning flow.
+- Practice remains unscored and retryable.
+- Assessment remains scored and tracked.
+- Detailed feedback is visible in progress.
+- The doubt chatbot is available from the dashboard.
+- Bedrock/Nova integration exists, but lesson generation is now protected by a local fallback path so the demo remains usable even when Nova lesson generation is unstable.

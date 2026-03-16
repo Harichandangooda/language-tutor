@@ -36,7 +36,7 @@ class _ListeningPageState extends State<ListeningPage> {
       accentColor: const Color(0xFF0F766E),
       previousRoute: '/lesson/reading',
       nextRoute: '/lesson/writing',
-      nextEnabled: _submitted && _correctCount == _controllers.length && _controllers.isNotEmpty,
+      nextEnabled: _submitted,
       body: FutureBuilder(
         future: controller.fetchListening(),
         builder: (context, snapshot) {

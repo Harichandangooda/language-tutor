@@ -15,7 +15,6 @@ class _WritingPageState extends State<WritingPage> {
   final TextEditingController _responseController = TextEditingController();
   bool _submitted = false;
   int _matchedKeywords = 0;
-  int _expectedKeywordCount = 0;
 
   @override
   void dispose() {
@@ -35,7 +34,7 @@ class _WritingPageState extends State<WritingPage> {
       accentColor: const Color(0xFF2563EB),
       previousRoute: '/lesson/listening',
       nextRoute: '/lesson/speaking',
-      nextEnabled: _submitted && _expectedKeywordCount > 0 && _matchedKeywords == _expectedKeywordCount,
+      nextEnabled: _submitted,
       body: FutureBuilder(
         future: controller.fetchWriting(),
         builder: (context, snapshot) {
@@ -47,7 +46,6 @@ class _WritingPageState extends State<WritingPage> {
           }
 
           final writing = snapshot.data!;
-          _expectedKeywordCount = writing.expectedKeywords.length;
           return Column(
             children: [
               LessonCard(

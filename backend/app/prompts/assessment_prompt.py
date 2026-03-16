@@ -10,7 +10,7 @@ assessment_prompt = ChatPromptTemplate.from_messages(
                 "Generate only the final assessment for a German lesson. "
                 "The assessment must match the already prepared lesson content, "
                 "but use slightly different wording so it tests transfer instead of memorization. "
-                "Return only structured output."
+                "Return valid JSON only. Do not add markdown fences or commentary."
             ),
         ),
         (
@@ -27,6 +27,7 @@ assessment_prompt = ChatPromptTemplate.from_messages(
                 "- Keep the questions slightly different from the guided practice\n"
                 "- Every German learner-facing question must include English translation and word_glosses\n"
                 "- Include 2 reading assessment questions, 2 listening assessment questions, 1 writing assessment prompt, 1 speaking assessment prompt, and exactly 5 MCQ questions\n"
+                "- Return a single valid JSON object matching the assessment schema\n"
             ),
         ),
     ]

@@ -68,6 +68,20 @@ class ApiClient {
         .toList();
   }
 
+  Future<String> askDoubt({
+    required String userId,
+    required String message,
+  }) async {
+    final response = await _post(
+      '/app/doubt-chat',
+      {
+        'user_id': userId,
+        'message': message,
+      },
+    );
+    return (response['answer'] ?? '') as String;
+  }
+
   Future<ReadingContentModel> fetchReading(String lessonId) async {
     final response = await _get('/lessons/$lessonId/reading');
     return ReadingContentModel.fromJson(response);

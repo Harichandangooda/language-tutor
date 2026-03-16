@@ -137,6 +137,8 @@ class LessonService:
                     learner_state=learner_state,
                     lesson_blueprint=blueprint,
                 )
+                if lesson_package is None:
+                    raise LessonGenerationError("Lesson generator returned no data")
             except Exception as exc:
                 raise LessonGenerationError(
                     f"Failed to generate demo lesson {blueprint['slot']} ({blueprint['slug']})"

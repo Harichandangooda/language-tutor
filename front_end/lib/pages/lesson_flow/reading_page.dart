@@ -43,7 +43,7 @@ class _ReadingPageState extends State<ReadingPage> {
       accentColor: const Color(0xFFD97706),
       previousRoute: '/lesson/practice',
       nextRoute: '/lesson/listening',
-      nextEnabled: _submitted && _correctCount == _controllers.length && _controllers.isNotEmpty,
+      nextEnabled: _submitted,
       body: FutureBuilder(
         future: controller.fetchReading(),
         builder: (context, snapshot) {

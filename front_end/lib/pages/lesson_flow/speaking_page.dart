@@ -15,7 +15,6 @@ class _SpeakingPageState extends State<SpeakingPage> {
   final TextEditingController _transcriptController = TextEditingController();
   bool _submitted = false;
   int _matchedPhrases = 0;
-  int _expectedPhraseCount = 0;
 
   @override
   void dispose() {
@@ -35,7 +34,7 @@ class _SpeakingPageState extends State<SpeakingPage> {
       accentColor: const Color(0xFF7C3AED),
       previousRoute: '/lesson/writing',
       nextRoute: '/lesson/assessment',
-      nextEnabled: _submitted && _expectedPhraseCount > 0 && _matchedPhrases == _expectedPhraseCount,
+      nextEnabled: _submitted,
       body: FutureBuilder(
         future: controller.fetchSpeaking(),
         builder: (context, snapshot) {
@@ -47,7 +46,6 @@ class _SpeakingPageState extends State<SpeakingPage> {
           }
 
           final speaking = snapshot.data!;
-          _expectedPhraseCount = speaking.expectedPhrases.length;
           return Column(
             children: [
               LessonCard(

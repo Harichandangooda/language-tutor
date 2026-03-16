@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from backend.app.dependencies import get_app_data_service
+from backend.app.dependencies import get_app_data_service, get_doubt_chat_service
 from backend.app.schemas.app_views import (
     FlashcardListResponse,
     LevelSelectionRequest,
@@ -8,7 +8,9 @@ from backend.app.schemas.app_views import (
     ProfileSummaryResponse,
     ProgressSummaryResponse,
 )
+from backend.app.schemas.doubt_chat import DoubtChatRequest, DoubtChatResponse
 from backend.app.services.app_data_service import AppDataRequestError, AppDataService
+from backend.app.services.doubt_chat_service import DoubtChatError, DoubtChatService
 
 router = APIRouter(prefix="/app", tags=["app"])
 
@@ -63,6 +65,20 @@ def get_flashcards(
     try:
         return service.get_flashcards(user_id)
     except AppDataRequestError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+
+@router.post("/doubt-chat", response_model=DoubtChatResponse)
+def doubt_chat(
+    request: DoubtChatRequest,
+    service: DoubtChatService = Depends(get_doubt_chat_service),
+):
+    try:
+        return {"answer": service.answer_doubt(request.user_id, request.message)}
+    except DoubtChatError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),

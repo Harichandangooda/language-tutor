@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'pages/dashboard_page.dart';
+import 'pages/doubt_chat_page.dart';
 import 'pages/flashcards_page.dart';
 import 'pages/lesson_flow/assessment_page.dart';
 import 'pages/lesson_flow/learn_page.dart';
@@ -128,6 +129,7 @@ class LingoLearnApp extends StatelessWidget {
         '/level_selector': (context) => const LevelSelectorPage(),
         '/loading': (context) => const LoadingPage(),
         '/dashboard': (context) => const DashboardPage(),
+        '/doubts': (context) => const DoubtChatPage(),
         '/flashcards': (context) => const FlashcardsPage(),
         '/lesson/learn': (context) => const LearnPage(),
         '/lesson/practice': (context) => const PracticePage(),

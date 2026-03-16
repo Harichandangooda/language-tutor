@@ -14,7 +14,7 @@ lesson_prompt = ChatPromptTemplate.from_messages(
                 "Use the learner context provided. "
                 "If learner_state is empty or cold_start is true, generate a diagnostic baseline lesson. "
                 "Prefer short passages, short prompts, and simple vocabulary. "
-                "Return only structured output."
+                "Return valid JSON only. Do not add markdown fences or commentary."
             ),
         ),
         (
@@ -46,6 +46,7 @@ lesson_prompt = ChatPromptTemplate.from_messages(
                 "- Speaking should contain one prompt and expected_phrases\n"
                 "- If assessment is included, it should contain 2 reading assessment questions, 2 listening assessment questions, 1 writing assessment prompt, 1 speaking assessment prompt, and 5 MCQ questions\n"
                 "- All learner-facing lesson content should be about German for beginner English speakers\n"
+                "- Return a single valid JSON object matching the lesson schema\n"
             ),
         ),
     ]

@@ -57,41 +57,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   void _showDoubtSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: const Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Doubt Clearance',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF112032),
-                ),
-              ),
-              SizedBox(height: 10),
-              Text(
-                'This stays as a frontend placeholder for now. The lesson, progress, profile, and flashcard flows are connected to the backend.',
-                style: TextStyle(
-                  height: 1.6,
-                  color: Color(0xFF526071),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    Navigator.pushNamed(context, '/doubts');
   }
 }
 
